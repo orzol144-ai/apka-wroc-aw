@@ -1,176 +1,174 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Planer dnia – Wrocław</title>
+  <meta charset="UTF-8">
+  <title>Planer dnia</title>
+
   <style>
     body {
-      font-family: Arial;
-      text-align: center;
-      background: #111;
-      color: white;
-      padding: 40px;
-    }
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
 
-    h1 {
-      color: #00ffcc;
-    }
+/* kontener jak appka */
+.box {
+  background: white;
+  width: 90%;
+  max-width: 400px;
+  padding: 25px;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  text-align: center;
+}
 
-    select, button {
-      padding: 10px;
-      margin: 10px;
-      font-size: 16px;
-    }
+/* tytuł */
+h2 {
+  margin-bottom: 20px;
+}
 
-    button {
-      background: #00ffcc;
-      border: none;
-      cursor: pointer;
-    }
+/* select + button */
+select, button {
+  width: 100%;
+  padding: 14px;
+  margin-top: 12px;
+  border-radius: 12px;
+  border: none;
+  font-size: 16px;
+}
 
-    .secondary {
-      background: #444;
-      color: white;
-    }
+/* select */
+select {
+  background: #f1f1f1;
+}
 
-    pre {
-      background: #222;
-      padding: 20px;
-      text-align: left;
-      display: inline-block;
-      margin-top: 20px;
-      min-width: 320px;
-    }
+/* button */
+button {
+  background: #667eea;
+  color: white;
+  font-weight: bold;
+  transition: 0.2s;
+}
+
+.item {
+  background: white;
+  margin: 10px 0;
+  padding: 14px;
+  border-radius: 12px;
+  box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+  transition: 0.2s;
+  font-size: 14px;
+}
+
+.item:hover {
+  transform: scale(1.03);
+}
+
+.loading {
+  color: #00ffd5;
+  font-weight: bold;
+}
+
+#wynik {
+  margin-top: 20px;
+  text-align: left;
+  background: #f7f7f7;
+  padding: 15px;
+  border-radius: 12px;
+  min-height: 80px;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+/* efekt kliknięcia */
+button:active {
+  transform: scale(0.97);
+}
+/* hover */
+button:hover {
+  background: #5563d1;
+  transform: scale(1.03);
+}
+
+/* wynik */
+#wynik {
+  margin-top: 20px;
+  text-align: left;
+  background: #f7f7f7;
+  padding: 15px;
+  border-radius: 12px;
+  min-height: 80px;
+}
+
+/* loading animacja */
+.loading {
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0% {opacity: 1;}
+  50% {opacity: 0.3;}
+  100% {opacity: 1;}
+}
   </style>
 </head>
+
 <body>
 
-<h1>Planer dnia – Wrocław (Anka 😎)</h1>
+<div class="box">
+  <h2>📍 Plan dnia – Wrocław</h2>
 
-<p>Wybierz styl:</p>
+  <p class="subtitle">Wybierz klimat dnia 👇</p>
 
-<select id="styl">
-  <option value="leniwy">😴 Leniwy</option>
-  <option value="normalny">🚶 Normalny</option>
-  <option value="ambitny">🧗 Ambitny</option>
-</select>
+  <select id="styl">
+    <option value="leniwy">😴 Leniwy</option>
+    <option value="aktywny">🏃 Aktywny</option>
+    <option value="romantyczny">❤️ Romantyczny</option>
+  </select>
 
-<br>
+  <button onclick="ulozDzien()">🚀 Ułóż mi dzień</button>
 
-<button onclick="generujPlan()">Ułóż mi dzień</button>
-<button class="secondary" onclick="generujPlan()">🔄 Zmień plan</button>
-<button class="secondary" onclick="trybZmeczenie()">😩 Jestem zmęczony</button>
-
-<pre id="wynik">Kliknij i zobacz plan 👇</pre>
+  <div id="wynik"></div>
+</div>
 
 <script>
-function losuj(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-
-// PRAWDZIWE miejsca we Wrocławiu
-const miejsca = {
-  start: [
-    "Rynek (serce miasta, kolorowe kamienice)",
-    "Plac Solny (kwiaty i klimat)"
-  ],
-  spacer: [
-    "Ostrów Tumski (najstarsza część miasta)",
-    "Bulwar Dunikowskiego (widok na Odrę)"
-  ],
-  jedzenie: [
-    "Pierogarnia (polskie klasyki)",
-    "Pizza neapolitańska",
-    "Street food (burger/kebab)",
-    "Restauracja nad Odrą"
-  ],
-  atrakcja: [
-    "Panorama Racławicka (unikalne malowidło 360°)",
-    "Zoo Wrocław (jedno z najlepszych w Polsce)",
-    "Hala Stulecia + fontanna"
-  ],
-  chill: [
-    "Park Szczytnicki (duży park, cisza)",
-    "Wyspa Słodowa (relaks i ludzie)"
-  ]
-};
-
-function generujPlan() {
+async function ulozDzien() {
   const styl = document.getElementById("styl").value;
+  const wynik = document.getElementById("wynik");
 
-  let plan = "";
+  wynik.innerHTML = '<span class="loading">⏳ Generuję plan...</span>';
 
-  if (styl === "leniwy") {
-    plan = `
-📍 WROCŁAW – TRYB LENIWY
+  try {
+    const res = await fetch("https://apka-wroc-aw-1.onrender.com/plan", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ styl: styl })
+    });
 
-10:00 – ${losuj(miejsca.start)}
+    const data = await res.json();
 
-12:00 – ${losuj(miejsca.spacer)}
+    console.log("ODPOWIEDŹ:", data);
 
-14:00 – ${losuj(miejsca.jedzenie)}
+    const linie = data.wynik.split('\n');
 
-16:00 – ${losuj(miejsca.chill)}
+let html = '';
 
-19:00 – Kolacja + chill
-`;
+linie.forEach(linia => {
+  if (linia.trim() !== '') {
+    html += `<div class="item">📍 ${linia}</div>`;
   }
+});
 
-  if (styl === "normalny") {
-    plan = `
-📍 WROCŁAW – TRYB NORMALNY
-
-09:00 – ${losuj(miejsca.start)}
-
-11:00 – ${losuj(miejsca.spacer)}
-
-13:30 – ${losuj(miejsca.jedzenie)}
-
-15:30 – ${losuj(miejsca.atrakcja)}
-
-18:30 – Kolacja
-`;
+wynik.innerHTML = html;
+  } catch (err) {
+    console.log("BŁĄD:", err);
+    wynik.innerText = "❌ Błąd połączenia";
   }
-
-  if (styl === "ambitny") {
-    plan = `
-📍 WROCŁAW – TRYB AMBITNY
-
-08:00 – ${losuj(miejsca.start)}
-
-10:00 – ${losuj(miejsca.spacer)}
-
-12:00 – ${losuj(miejsca.atrakcja)}
-
-14:00 – ${losuj(miejsca.jedzenie)}
-
-16:00 – ${losuj(miejsca.atrakcja)}
-
-19:00 – Kolacja
-`;
-  }
-
-  document.getElementById("wynik").innerText = plan;
-}
-
-function trybZmeczenie() {
-  let plan = `
-⚡ ZMIANA PLANU – TRYB ZMĘCZONY
-
-👉 skracamy plan
-👉 mniej chodzenia
-
-13:00 – ${losuj(miejsca.jedzenie)}
-
-14:30 – ${losuj(miejsca.chill)}
-
-17:00 – Lekki spacer
-
-19:00 – Kolacja i koniec 😄
-`;
-
-  document.getElementById("wynik").innerText = plan;
 }
 </script>
-
-</body>
-</html>
