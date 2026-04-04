@@ -41,6 +41,11 @@ button {
   font-weight: bold;
 }
 
+.quick-buttons {
+  display: flex;
+  gap: 10px;
+}
+
 #wynik {
   margin-top: 20px;
   display: flex;
@@ -60,17 +65,6 @@ button {
   from {opacity:0; transform: translateY(10px);}
   to {opacity:1; transform: translateY(0);}
 }
-
-.loading {
-  font-weight: bold;
-  color: #667eea;
-}
-
-a {
-  color: #667eea;
-  text-decoration: none;
-  font-weight: bold;
-}
 </style>
 </head>
 
@@ -87,6 +81,11 @@ a {
 
   <button onclick="ulozDzien()">🚀 Ułóż mi dzień</button>
 
+  <div class="quick-buttons">
+    <button onclick="glodny()">🍔 Jestem głodny</button>
+    <button onclick="zmeczony()">😴 Jestem zmęczony</button>
+  </div>
+
   <div id="wynik"></div>
 </div>
 
@@ -97,45 +96,56 @@ async function ulozDzien() {
 
   wynik.innerHTML = "⏳ Generuję plan...";
 
-  try {
-    const res = await fetch("https://apka-wroc-aw-1.onrender.com/plan", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ styl })
-    });
+  const res = await fetch("https://apka-wroc-aw-1.onrender.com/plan", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ styl })
+  });
 
-    const data = await res.json();
+  const data = await res.json();
+  render(data.wynik);
+}
 
-    const linie = data.wynik.split("\n");
-    let html = "";
-    let godzina = "";
+async function glodny() {
+  const wynik = document.getElementById("wynik");
 
-    linie.forEach((linia, i) => {
-      linia = linia.trim();
-      if (!linia) return;
+  wynik.innerHTML = "🍔 Szukam jedzenia...";
 
-      if (linia.match(/^\d{1,2}:\d{2}/)) {
-        godzina = linia;
-      } else {
+  const res = await fetch("https://apka-wroc-aw-1.onrender.com/food", {
+    method: "POST"
+  });
 
-        const mapLink = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(linia);
+  const data = await res.json();
+  render(data.wynik);
+}
 
-        html += `
-        <div class="item" style="animation-delay:${i*0.1}s">
-          <strong>${godzina}</strong><br>
-          📍 ${linia}<br>
-          <a href="${mapLink}" target="_blank">➡️ Otwórz w Google Maps</a>
-        </div>`;
-      }
-    });
+async function zmeczony() {
+  const wynik = document.getElementById("wynik");
 
-    wynik.innerHTML = html;
+  wynik.innerHTML = "😴 Skracam plan...";
 
-  } catch (err) {
-    wynik.innerText = "❌ Błąd połączenia";
-  }
+  const res = await fetch("https://apka-wroc-aw-1.onrender.com/short", {
+    method: "POST"
+  });
+
+  const data = await res.json();
+  render(data.wynik);
+}
+
+function render(text) {
+  const wynik = document.getElementById("wynik");
+
+  const linie = text.split("\n");
+  let html = "";
+
+  linie.forEach((linia, i) => {
+    linia = linia.trim();
+    if (!linia) return;
+
+    html += `<div class="item" style="animation-delay:${i*0.1}s">${linia}</div>`;
+  });
+
+  wynik.innerHTML = html;
 }
 </script>
 
