@@ -5,14 +5,18 @@
   <title>Planer dnia</title>
 
   <style>
-    body {
+body {
   margin: 0;
-  font-family: 'Segoe UI', sans-serif;
+  padding: 0;
+  font-family: Arial, sans-serif;
+
   background: linear-gradient(135deg, #667eea, #764ba2);
+
+  min-height: 100vh;
+
   display: flex;
   justify-content: center;
-  align-items: center;
-  height: 100vh;
+  align-items: flex-start;
 }
 
 /* kontener jak appka */
@@ -33,18 +37,35 @@ h2 {
 }
 
 /* select + button */
-select, button {
+select,button {
   width: 100%;
-  padding: 14px;
-  margin-top: 12px;
-  border-radius: 12px;
+  padding: 16px;
+
   border: none;
+  border-radius: 14px;
+
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+
   font-size: 16px;
+  font-weight: bold;
+
+  margin-top: 10px;
+
+  cursor: pointer;
 }
 
 /* select */
 select {
-  background: #f1f1f1;
+  width: 100%;
+  padding: 14px;
+
+  border-radius: 12px;
+  border: none;
+
+  margin-top: 10px;
+
+  font-size: 15px;
 }
 
 /* button */
@@ -75,14 +96,12 @@ button {
 }
 
 #wynik {
+  #wynik {
   margin-top: 20px;
-  text-align: left;
-  background: #f7f7f7;
-  padding: 15px;
-  border-radius: 12px;
-  min-height: 80px;
-  line-height: 1.5;
-  white-space: pre-line;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 /* efekt kliknięcia */
@@ -135,11 +154,20 @@ button:hover {
     padding: 10px;
   }
 
-  .box {
-    width: 100%;
-    padding: 15px;
-    border-radius: 16px;
-  }
+.box {
+  width: 100%;
+  max-width: 500px;
+
+  margin-top: 20px;
+  margin-bottom: 20px;
+
+  background: white;
+  border-radius: 20px;
+
+  padding: 20px;
+
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
 
   h2 {
     font-size: 20px;
