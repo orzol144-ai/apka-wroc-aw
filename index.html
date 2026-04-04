@@ -12,34 +12,27 @@
 <style>
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
+  font-family: Arial;
   background: linear-gradient(135deg, #667eea, #764ba2);
-  min-height: 100vh;
   display: flex;
   justify-content: center;
-  align-items: flex-start;
 }
 
-/* kontener */
 .box {
-  background: rgba(255,255,255,0.95);
+  background: white;
+  margin-top: 20px;
+  padding: 20px;
+  border-radius: 20px;
   width: 90%;
   max-width: 400px;
-  margin-top: 20px;
-  padding: 25px;
-  border-radius: 20px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-  text-align: center;
 }
 
-/* select + button */
 select, button {
   width: 100%;
   padding: 14px;
+  margin-top: 10px;
   border-radius: 12px;
   border: none;
-  margin-top: 10px;
-  font-size: 15px;
 }
 
 button {
@@ -48,7 +41,6 @@ button {
   font-weight: bold;
 }
 
-/* wynik */
 #wynik {
   margin-top: 20px;
   display: flex;
@@ -56,26 +48,28 @@ button {
   gap: 10px;
 }
 
-/* kafelki */
 .item {
-  background: #f7f7f7;
+  background: #f5f5f5;
   padding: 14px;
   border-radius: 12px;
-  text-align: left;
-  opacity: 0;
   animation: fadeIn 0.4s ease forwards;
+  opacity: 0;
 }
 
-/* animacja */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {opacity:0; transform: translateY(10px);}
+  to {opacity:1; transform: translateY(0);}
 }
 
-/* loading */
 .loading {
   font-weight: bold;
   color: #667eea;
+}
+
+a {
+  color: #667eea;
+  text-decoration: none;
+  font-weight: bold;
 }
 </style>
 </head>
@@ -101,7 +95,7 @@ async function ulozDzien() {
   const styl = document.getElementById("styl").value;
   const wynik = document.getElementById("wynik");
 
-  wynik.innerHTML = '<span class="loading">⏳ Generuję plan...</span>';
+  wynik.innerHTML = "⏳ Generuję plan...";
 
   try {
     const res = await fetch("https://apka-wroc-aw-1.onrender.com/plan", {
@@ -109,28 +103,30 @@ async function ulozDzien() {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ styl: styl })
+      body: JSON.stringify({ styl })
     });
 
     const data = await res.json();
 
-    console.log("ODPOWIEDŹ:", data);
-
     const linie = data.wynik.split("\n");
     let html = "";
-    let poprzedniaGodzina = "";
+    let godzina = "";
 
     linie.forEach((linia, i) => {
       linia = linia.trim();
-      if (linia === "") return;
+      if (!linia) return;
 
       if (linia.match(/^\d{1,2}:\d{2}/)) {
-        poprzedniaGodzina = linia;
+        godzina = linia;
       } else {
+
+        const mapLink = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(linia);
+
         html += `
-        <div class="item" style="animation-delay:${i * 0.15}s">
-          <strong>${poprzedniaGodzina}</strong><br>
-          ${linia}
+        <div class="item" style="animation-delay:${i*0.1}s">
+          <strong>${godzina}</strong><br>
+          📍 ${linia}<br>
+          <a href="${mapLink}" target="_blank">➡️ Otwórz w Google Maps</a>
         </div>`;
       }
     });
@@ -138,7 +134,6 @@ async function ulozDzien() {
     wynik.innerHTML = html;
 
   } catch (err) {
-    console.log("BŁĄD:", err);
     wynik.innerText = "❌ Błąd połączenia";
   }
 }

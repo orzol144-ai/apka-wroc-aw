@@ -20,30 +20,60 @@ const openai = new OpenAI({
 });
 
 app.post("/plan", async (req, res) => {
-  try {
-    const { styl } = req.body;
+  const styl = req.body.styl;
 
-    const prompt = `
-Ułóż plan dnia we Wrocławiu dla stylu: ${styl}.
-Podaj konkretny plan godzinowy + propozycje miejsc.
-Krótko, konkretnie, po polsku.
+  const prompt = `
+Stwórz szczegółowy plan dnia we Wrocławiu dla stylu: ${styl}.
+
+Uwzględnij:
+- Aktualna pogoda: chłodno (ok. 10°C), możliwe zachmurzenie
+- Unikaj aktywności typu rower jeśli zimno
+- Preferuj miejsca pod dachem + klimatyczne spacery
+
+Każdy punkt musi zawierać:
+- godzinę
+- konkretne miejsce (nazwa!)
+- krótki opis klimatu
+- ciekawostkę o miejscu (jeśli możliwe)
+- jak się tam dostać (np. spacer, tramwaj)
+
+Styl:
+- luźny, naturalny, jak polecenie od znajomego
+
+Format (BARDZO WAŻNE):
+10:00
+Kawiarnia X – opis... Dojście...
+
+11:30
+Miejsce Y – opis...
+
+Bez znaków typu *, #, list itd.
+
+Na końcu dodaj krótkie podsumowanie dnia.
 `;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
-      messages: [
-        { role: "system", content: "Jesteś pomocnym asystentem." },
-        { role: "user", content: prompt }
-      ]
+  try {
+    const response = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "gpt-4.1-mini",
+        input: prompt
+      })
     });
 
-    const wynik = response.choices[0].message.content;
+    const data = await response.json();
 
-    res.json({ wynik });
+    res.json({
+      wynik: data.output[0].content[0].text
+    });
 
   } catch (err) {
-    console.log(err);
-    res.status(500).json({ error: "Błąd API" });
+    console.error(err);
+    res.status(500).json({ error: "Błąd serwera" });
   }
 });
 
