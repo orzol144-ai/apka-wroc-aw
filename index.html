@@ -6,7 +6,6 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#667eea">
-
 <link rel="manifest" href="manifest.json">
 
 <style>
@@ -24,10 +23,10 @@ body {
   padding: 20px;
   border-radius: 20px;
   width: 90%;
-  max-width: 400px;
+  max-width: 420px;
 }
 
-select, button {
+button, select {
   width: 100%;
   padding: 14px;
   margin-top: 10px;
@@ -41,7 +40,7 @@ button {
   font-weight: bold;
 }
 
-.quick-buttons {
+.quick {
   display: flex;
   gap: 10px;
 }
@@ -57,13 +56,10 @@ button {
   background: #f5f5f5;
   padding: 14px;
   border-radius: 12px;
-  animation: fadeIn 0.4s ease forwards;
-  opacity: 0;
 }
 
-@keyframes fadeIn {
-  from {opacity:0; transform: translateY(10px);}
-  to {opacity:1; transform: translateY(0);}
+.back {
+  background: #333;
 }
 </style>
 </head>
@@ -81,71 +77,126 @@ button {
 
   <button onclick="ulozDzien()">🚀 Ułóż mi dzień</button>
 
-  <div class="quick-buttons">
+  <div class="quick">
     <button onclick="glodny()">🍔 Jestem głodny</button>
     <button onclick="zmeczony()">😴 Jestem zmęczony</button>
   </div>
+
+  <button class="back" onclick="pokazPlan()">⬅️ Wróć do planu</button>
 
   <div id="wynik"></div>
 </div>
 
 <script>
-async function ulozDzien() {
-  const styl = document.getElementById("styl").value;
-  const wynik = document.getElementById("wynik");
+let ostatniPlan = localStorage.getItem("plan") || "";
 
-  wynik.innerHTML = "⏳ Generuję plan...";
-
-  const res = await fetch("https://apka-wroc-aw-1.onrender.com/plan", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ styl })
-  });
-
-  const data = await res.json();
-  render(data.wynik);
-}
-
-async function glodny() {
-  const wynik = document.getElementById("wynik");
-
-  wynik.innerHTML = "🍔 Szukam jedzenia...";
-
-  const res = await fetch("https://apka-wroc-aw-1.onrender.com/food", {
-    method: "POST"
-  });
-
-  const data = await res.json();
-  render(data.wynik);
-}
-
-async function zmeczony() {
-  const wynik = document.getElementById("wynik");
-
-  wynik.innerHTML = "😴 Skracam plan...";
-
-  const res = await fetch("https://apka-wroc-aw-1.onrender.com/short", {
-    method: "POST"
-  });
-
-  const data = await res.json();
-  render(data.wynik);
-}
-
-function render(text) {
+// render
+function render(text){
   const wynik = document.getElementById("wynik");
 
   const linie = text.split("\n");
   let html = "";
 
-  linie.forEach((linia, i) => {
+  linie.forEach(linia => {
     linia = linia.trim();
     if (!linia) return;
 
-    html += `<div class="item" style="animation-delay:${i*0.1}s">${linia}</div>`;
+    const mapLink = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(linia);
+
+    html += `<div class="item">
+      📍 ${linia}<br>
+      <a href="${mapLink}" target="_blank">➡️ Mapy</a>
+    </div>`;
   });
 
   wynik.innerHTML = html;
+}
+
+// GPS
+function getLocation(){
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({
+        lat: pos.coords.latitude,
+        lon: pos.coords.longitude
+      }),
+      err => reject(err)
+    );
+  });
+}
+
+// PLAN
+async function ulozDzien(){
+  const styl = document.getElementById("styl").value;
+  const wynik = document.getElementById("wynik");
+
+  wynik.innerHTML = "⏳ Generuję...";
+
+  const res = await fetch("https://apka-wroc-aw-1.onrender.com/plan", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ styl })
+  });
+
+  const data = await res.json();
+
+  ostatniPlan = data.wynik;
+  localStorage.setItem("plan", data.wynik);
+
+  render(data.wynik);
+}
+
+// FOOD + GPS
+async function glodny(){
+  const wynik = document.getElementById("wynik");
+
+  wynik.innerHTML = "📍 Pobieram lokalizację...";
+
+  try {
+    const loc = await getLocation();
+
+    wynik.innerHTML = "🍔 Szukam jedzenia...";
+
+    const res = await fetch("https://apka-wroc-aw-1.onrender.com/food", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify(loc)
+    });
+
+    const data = await res.json();
+    render(data.wynik);
+
+  } catch {
+    wynik.innerHTML = "❌ Brak dostępu do lokalizacji";
+  }
+}
+
+// SHORT
+async function zmeczony(){
+  const wynik = document.getElementById("wynik");
+
+  wynik.innerHTML = "😴 Skracam plan...";
+
+  const res = await fetch("https://apka-wroc-aw-1.onrender.com/short", {
+    method:"POST"
+  });
+
+  const data = await res.json();
+  render(data.wynik);
+}
+
+// POWRÓT
+function pokazPlan(){
+  if(ostatniPlan){
+    render(ostatniPlan);
+  } else {
+    alert("Najpierw wygeneruj plan 😄");
+  }
+}
+
+// AUTO LOAD (jak wrócisz do appki)
+if(ostatniPlan){
+  render(ostatniPlan);
 }
 </script>
 

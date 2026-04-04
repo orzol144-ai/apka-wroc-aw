@@ -1,6 +1,5 @@
 import express from "express";
 import cors from "cors";
-import OpenAI from "openai";
 import path from "path";
 
 const app = express();
@@ -13,11 +12,7 @@ app.get("/", (req, res) => {
   res.sendFile(path.resolve("index.html"));
 });
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
-
-// 🧠 FUNKCJA DO GPT (żeby nie powielać kodu)
+// 🧠 GPT helper (bez crashy)
 async function askAI(prompt) {
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
@@ -32,10 +27,13 @@ async function askAI(prompt) {
   });
 
   const data = await response.json();
-  return data.output[0].content[0].text;
+
+  return data.output?.[0]?.content?.[0]?.text || "Brak odpowiedzi 😢";
 }
 
+//
 // 📍 PLAN DNIA
+//
 app.post("/plan", async (req, res) => {
   const styl = req.body.styl;
 
@@ -43,22 +41,22 @@ app.post("/plan", async (req, res) => {
 Stwórz szczegółowy plan dnia we Wrocławiu dla stylu: ${styl}.
 
 WARUNKI:
-- Aktualna pogoda: chłodno (~10°C)
-- Unikaj roweru i długiego siedzenia na zewnątrz
+- chłodno (~10°C)
+- unikaj roweru
+- mieszaj aktywności
 
 WAŻNE:
-- NIE powtarzaj typu miejsca pod rząd
-- Plan ma być różnorodny (kawa → spacer → atrakcja → jedzenie)
-- Naturalny flow dnia
+- NIE powtarzaj typów miejsc pod rząd
+- flow dnia: kawa → spacer → atrakcja → jedzenie
 
 Każdy punkt:
 - godzina
-- konkretne miejsce
+- konkretne miejsce (nazwa)
 - opis klimatu
 - ciekawostka
 - jak się dostać
 
-Styl luźny jak od znajomego
+Styl luźny
 
 FORMAT:
 10:00
@@ -73,48 +71,56 @@ Opis...
     res.json({ wynik });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Błąd" });
+    res.status(500).json({ error: "Błąd planu" });
   }
 });
 
-// 🍔 JESTEM GŁODNY
+//
+// 🍔 JEDZENIE Z GPS (NAPRAWIONE)
+//
 app.post("/food", async (req, res) => {
 
+  const { lat, lon } = req.body;
+
   const prompt = `
-Znajdź dobre jedzenie we Wrocławiu.
+Znajdź dobre jedzenie BLISKO tej lokalizacji:
+Lat: ${lat}
+Lon: ${lon}
 
-Warunki:
-- konkretne knajpy
-- różne opcje (burger, pizza, coś lokalnego)
-- krótki opis klimatu
-- jak się dostać
+WARUNKI:
+- miejsca w zasięgu spaceru
+- konkretne knajpy (nazwy!)
+- różne typy (burger, pizza, lokalne)
+- podaj ile minut pieszo
+- krótki opis
 
-Nie powtarzaj tego samego typu miejsca.
-
-Styl luźny.
+Styl luźny
 
 FORMAT:
-Nazwa – opis...
+Nazwa – opis + ile minut pieszo
 `;
 
   try {
     const wynik = await askAI(prompt);
     res.json({ wynik });
   } catch (err) {
-    res.status(500).json({ error: "Błąd" });
+    console.error(err);
+    res.status(500).json({ error: "Błąd food" });
   }
 });
 
-// 😴 JESTEM ZMĘCZONY
+//
+// 😴 SKRÓCONY PLAN
+//
 app.post("/short", async (req, res) => {
 
   const prompt = `
 Stwórz krótki plan dnia we Wrocławiu (max 3 punkty).
 
-Warunki:
+WARUNKI:
 - mało chodzenia
 - chill
-- bardziej odpoczynek niż aktywność
+- odpoczynek
 
 FORMAT:
 10:00 – coś
@@ -125,11 +131,14 @@ FORMAT:
     const wynik = await askAI(prompt);
     res.json({ wynik });
   } catch (err) {
-    res.status(500).json({ error: "Błąd" });
+    console.error(err);
+    res.status(500).json({ error: "Błąd short" });
   }
 });
 
-// 🚀 PORT
+//
+// 🚀 START
+//
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
