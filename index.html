@@ -17,7 +17,8 @@
 
 /* kontener jak appka */
 .box {
-  background: white;
+  background: rgba(255,255,255,0.9);
+backdrop-filter: blur(10px);
   width: 90%;
   max-width: 400px;
   padding: 25px;
@@ -128,7 +129,27 @@ button:hover {
     opacity: 1;
     transform: translateY(0);
   }
-}
+@media (max-width: 600px) {
+
+  body {
+    padding: 10px;
+  }
+
+  .box {
+    width: 100%;
+    padding: 15px;
+    border-radius: 16px;
+  }
+
+  h2 {
+    font-size: 20px;
+    text-align: center;
+  }
+
+  select, button {
+    width: 100%;
+    font-size: 16px;
+  }
   </style>
 </head>
 
