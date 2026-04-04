@@ -8,27 +8,26 @@
 body {
   margin:0;
   font-family: Arial, sans-serif;
-  background: linear-gradient(135deg,#667eea,#764ba2);
+  background: linear-gradient(135deg,#1e1e2f,#3a2f63);
   min-height:100vh;
   display:flex;
   justify-content:center;
   align-items:flex-start;
+  color:white;
 }
 
 .box {
   width:95%;
   max-width:420px;
-  background:rgba(255,255,255,0.95);
-  backdrop-filter: blur(10px);
+  background: rgba(30,30,40,0.95);
   margin-top:30px;
   border-radius:20px;
   padding:20px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
 }
 
 h2 {
   text-align:center;
-  margin-bottom:15px;
 }
 
 select, button {
@@ -41,7 +40,8 @@ select, button {
 }
 
 select {
-  background:#f2f2f2;
+  background:#2c2c3d;
+  color:white;
 }
 
 button {
@@ -49,7 +49,6 @@ button {
   color:white;
   font-weight:bold;
   cursor:pointer;
-  transition:0.2s;
 }
 
 button:active {
@@ -57,7 +56,7 @@ button:active {
 }
 
 .map-btn {
-  background:#333;
+  background:#444;
 }
 
 .save-btn {
@@ -65,11 +64,11 @@ button:active {
 }
 
 .card {
-  background:white;
+  background:#2a2a3a;
   padding:18px;
   border-radius:15px;
   margin-top:15px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  box-shadow: 0 5px 20px rgba(0,0,0,0.4);
   transition: transform 0.3s, opacity 0.3s;
   touch-action: pan-y;
 }
@@ -93,6 +92,10 @@ button:active {
 .actions button {
   flex:1;
 }
+
+h3 {
+  margin-top:20px;
+}
 </style>
 </head>
 
@@ -104,6 +107,7 @@ button:active {
 <select id="styl">
   <option value="leniwy">😴 Leniwy</option>
   <option value="aktywny">🏃 Aktywny</option>
+  <option value="romantyczny">❤️ Romantyczny</option>
 </select>
 
 <select id="transport">
@@ -124,7 +128,6 @@ let sloty = ["kawa","jedzenie","spacer","atrakcja"];
 let currentSlot = 0;
 let index = 0;
 let wybrane = [];
-
 let startX = 0;
 
 // START
@@ -168,7 +171,7 @@ function pokaz() {
       🚀 ${item.dojazd}
     </div>
 
-    <button class="map-btn" onclick="mapa('${item.mapy}')">📍 Otwórz w mapach</button>
+    <button class="map-btn" onclick="mapa('${item.mapy}')">📍 Mapy</button>
 
     <div class="actions">
       <button onclick="next()">❌</button>
@@ -244,7 +247,7 @@ function zapisz(){
   let zapisane = JSON.parse(localStorage.getItem("plany") || "[]");
   zapisane.push(wybrane);
   localStorage.setItem("plany", JSON.stringify(zapisane));
-  alert("Zapisano plan 👍");
+  alert("Zapisano 👍");
 }
 
 // ZAPISANE
