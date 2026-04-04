@@ -2,268 +2,196 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<title>Planer dnia</title>
+<title>Plan dnia</title>
 
 <style>
 body {
-  margin:0;
-  font-family: Arial, sans-serif;
-  background: linear-gradient(135deg,#1e1e2f,#3a2f63);
-  min-height:100vh;
-  display:flex;
-  justify-content:center;
-  align-items:flex-start;
-  color:white;
+  margin: 0;
+  font-family: Arial;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
 }
 
 .box {
-  width:95%;
-  max-width:420px;
-  background: rgba(30,30,40,0.95);
-  margin-top:30px;
-  border-radius:20px;
-  padding:20px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-}
-
-h2 {
-  text-align:center;
-}
-
-select, button {
-  width:100%;
-  padding:12px;
-  margin-top:10px;
-  border:none;
-  border-radius:12px;
-  font-size:15px;
-}
-
-select {
-  background:#2c2c3d;
-  color:white;
+  background: rgba(255,255,255,0.95);
+  margin-top: 30px;
+  padding: 20px;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 400px;
+  text-align: center;
 }
 
 button {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  margin-top: 10px;
   background: linear-gradient(135deg,#667eea,#764ba2);
-  color:white;
-  font-weight:bold;
-  cursor:pointer;
+  color: white;
+  font-weight: bold;
 }
 
-button:active {
-  transform:scale(0.97);
+select {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 10px;
 }
 
-.map-btn {
-  background:#444;
-}
-
-.save-btn {
-  background:#28a745;
+#cards {
+  margin-top: 20px;
 }
 
 .card {
-  background:#2a2a3a;
-  padding:18px;
-  border-radius:15px;
-  margin-top:15px;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.4);
-  transition: transform 0.3s, opacity 0.3s;
-  touch-action: pan-y;
+  background: #1e1e1e;
+  color: white;
+  padding: 15px;
+  border-radius: 15px;
+  margin-top: 15px;
+  text-align: left;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
 }
 
-.swipe-left {
-  transform: translateX(-120px);
-  opacity:0;
+.card img {
+  width: 100%;
+  border-radius: 12px;
+  margin-bottom: 10px;
 }
 
-.swipe-right {
-  transform: translateX(120px);
-  opacity:0;
-}
-
-.actions {
-  display:flex;
-  gap:10px;
-  margin-top:10px;
-}
-
-.actions button {
-  flex:1;
-}
-
-h3 {
-  margin-top:20px;
+.card a {
+  color: #8ab4ff;
+  text-decoration: none;
 }
 </style>
-</head>
 
+</head>
 <body>
 
 <div class="box">
-<h2>📍 Plan dnia</h2>
+  <h2>📍 Plan dnia</h2>
 
-<select id="styl">
-  <option value="leniwy">😴 Leniwy</option>
-  <option value="aktywny">🏃 Aktywny</option>
-  <option value="romantyczny">❤️ Romantyczny</option>
-</select>
+  <select id="styl">
+    <option value="leniwy">😴 Leniwy</option>
+    <option value="aktywny">🏃 Aktywny</option>
+    <option value="romantyczny">❤️ Romantyczny</option>
+  </select>
 
-<select id="transport">
-  <option value="pieszo">🚶 Pieszo</option>
-  <option value="komunikacja">🚋 Komunikacja</option>
-  <option value="auto">🚗 Auto</option>
-</select>
+  <select id="transport">
+    <option value="pieszo">🚶 Pieszo</option>
+    <option value="komunikacja">🚋 Komunikacja</option>
+    <option value="auto">🚗 Auto</option>
+  </select>
 
-<button onclick="start()">🚀 Start</button>
-<button onclick="pokazZapisane()">📂 Zapisane plany</button>
+  <button onclick="start()">🚀 Start</button>
 
-<div id="app"></div>
+  <div id="cards"></div>
 </div>
 
 <script>
-let data = {};
-let sloty = ["kawa","jedzenie","spacer","atrakcja"];
-let currentSlot = 0;
+let dane = {};
+let aktualnaKategoria = "kawa";
 let index = 0;
-let wybrane = [];
-let startX = 0;
 
-// START
 async function start() {
   const styl = document.getElementById("styl").value;
   const transport = document.getElementById("transport").value;
 
+  document.getElementById("cards").innerHTML = "Ładowanie...";
+
   const res = await fetch("/plan", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json"},
-    body:JSON.stringify({ styl, transport })
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ styl, transport })
   });
 
-  data = await res.json();
+  dane = await res.json();
 
-  currentSlot = 0;
+  aktualnaKategoria = "kawa";
   index = 0;
-  wybrane = [];
 
   pokaz();
 }
 
-// POKAZ
 function pokaz() {
-  const app = document.getElementById("app");
+  const kontener = document.getElementById("cards");
+  kontener.innerHTML = "";
 
-  if(currentSlot >= sloty.length){
-    pokazPodsumowanie();
-    return;
-  }
+  const lista = dane[aktualnaKategoria];
 
-  const slot = sloty[currentSlot];
-  const item = data[slot][index];
+  if (!lista || lista.length === 0) return;
 
-  app.innerHTML = `
-    <h3>${slot.toUpperCase()}</h3>
+  const item = lista[index];
 
-    <div class="card" id="card">
-      <b>${item.name}</b><br><br>
-      ${item.opis}<br><br>
-      🚀 ${item.dojazd}
-    </div>
+  const img = `https://source.unsplash.com/600x400/?${encodeURIComponent(item.name + " Wrocław")}`;
 
-    <button class="map-btn" onclick="mapa('${item.mapy}')">📍 Mapy</button>
+  const card = document.createElement("div");
+  card.className = "card";
 
-    <div class="actions">
-      <button onclick="next()">❌</button>
-      <button onclick="choose()">👍</button>
-    </div>
+  card.innerHTML = `
+    <img src="${img}">
+    <h3>${item.name}</h3>
+    <p>${item.opis}</p>
+    <small>${item.dojazd}</small><br><br>
+
+    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}" target="_blank">
+      📍 Otwórz w Mapach
+    </a>
   `;
 
-  dodajSwipe();
+  kontener.appendChild(card);
 }
 
 // SWIPE
-function dodajSwipe(){
-  const card = document.getElementById("card");
+let startX = 0;
 
-  card.addEventListener("touchstart", e=>{
-    startX = e.touches[0].clientX;
-  });
+document.addEventListener("touchstart", e => {
+  startX = e.touches[0].clientX;
+});
 
-  card.addEventListener("touchend", e=>{
-    let endX = e.changedTouches[0].clientX;
-    let diff = endX - startX;
+document.addEventListener("touchend", e => {
+  let endX = e.changedTouches[0].clientX;
 
-    if(diff > 60){
-      card.classList.add("swipe-right");
-      setTimeout(choose,200);
-    } else if(diff < -60){
-      card.classList.add("swipe-left");
-      setTimeout(next,200);
-    }
-  });
-}
+  if (endX < startX - 50) {
+    next();
+  }
 
-// NEXT
-function next(){
+  if (endX > startX + 50) {
+    prev();
+  }
+});
+
+function next() {
+  const lista = dane[aktualnaKategoria];
+  if (!lista) return;
+
   index++;
+
+  if (index >= lista.length) {
+    index = 0;
+
+    if (aktualnaKategoria === "kawa") aktualnaKategoria = "jedzenie";
+    else if (aktualnaKategoria === "jedzenie") aktualnaKategoria = "spacer";
+    else if (aktualnaKategoria === "spacer") aktualnaKategoria = "atrakcja";
+    else aktualnaKategoria = "kawa";
+  }
+
   pokaz();
 }
 
-// CHOOSE
-function choose(){
-  const slot = sloty[currentSlot];
-  wybrane.push(data[slot][index]);
-  currentSlot++;
-  index = 0;
+function prev() {
+  const lista = dane[aktualnaKategoria];
+  if (!lista) return;
+
+  index--;
+
+  if (index < 0) index = 0;
+
   pokaz();
-}
-
-// MAPA
-function mapa(link){
-  window.open(link,"_blank");
-}
-
-// PODSUMOWANIE
-function pokazPodsumowanie(){
-  const app = document.getElementById("app");
-
-  app.innerHTML = "<h3>🔥 Twój plan:</h3>";
-
-  wybrane.forEach(x=>{
-    app.innerHTML += `
-      <div class="card">
-        <b>${x.name}</b><br><br>
-        ${x.opis}
-      </div>
-    `;
-  });
-
-  app.innerHTML += `<button class="save-btn" onclick="zapisz()">💾 Zapisz plan</button>`;
-}
-
-// ZAPIS
-function zapisz(){
-  let zapisane = JSON.parse(localStorage.getItem("plany") || "[]");
-  zapisane.push(wybrane);
-  localStorage.setItem("plany", JSON.stringify(zapisane));
-  alert("Zapisano 👍");
-}
-
-// ZAPISANE
-function pokazZapisane(){
-  const app = document.getElementById("app");
-  const zapisane = JSON.parse(localStorage.getItem("plany") || "[]");
-
-  app.innerHTML = "<h3>📂 Zapisane plany:</h3>";
-
-  zapisane.forEach((plan,i)=>{
-    app.innerHTML += `<div class="card"><b>Plan ${i+1}</b><br><br>`;
-    plan.forEach(p=>{
-      app.innerHTML += `${p.name}<br>`;
-    });
-    app.innerHTML += "</div>";
-  });
 }
 </script>
 
