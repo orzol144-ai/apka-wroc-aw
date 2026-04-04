@@ -223,9 +223,13 @@ const linie = data.wynik.split('\n');
 let html = '';
 
 linie.forEach((linia, i) => {
-  if (linia.trim() !== '') {
-    html += `<div class="item" style="animation-delay:${i * 0.15}s">${linia}</div>`;
-  }
+  linia = linia.trim();
+
+  if (linia === '') return;
+
+  html += `<div class="item" style="animation-delay: ${i * 0.2}s">
+    ${linia}
+  </div>`;
 });
 
 wynik.innerHTML = html;
