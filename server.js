@@ -12,7 +12,6 @@ app.get("/", (req, res) => {
   res.sendFile(path.resolve("index.html"));
 });
 
-// 🧠 GPT helper (bez crashy)
 async function askAI(prompt) {
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
@@ -27,118 +26,48 @@ async function askAI(prompt) {
   });
 
   const data = await response.json();
-
-  return data.output?.[0]?.content?.[0]?.text || "Brak odpowiedzi 😢";
+  return data.output[0].content[0].text;
 }
 
-//
-// 📍 PLAN DNIA
-//
+// 📍 PLAN ZE SLOTAMI
 app.post("/plan", async (req, res) => {
-  const styl = req.body.styl;
+  const { styl, transport } = req.body;
 
   const prompt = `
-Stwórz szczegółowy plan dnia we Wrocławiu dla stylu: ${styl}.
+Stwórz plan dnia we Wrocławiu.
+
+Styl: ${styl}
+Transport: ${transport}
+
+ZWRÓĆ JSON (bez tekstu poza JSON):
+
+{
+  "kawa": [{ "name": "", "opis": "", "dojazd": "", "mapy": "" }],
+  "jedzenie": [{ "name": "", "opis": "", "dojazd": "", "mapy": "" }],
+  "spacer": [{ "name": "", "opis": "", "dojazd": "", "mapy": "" }],
+  "atrakcja": [{ "name": "", "opis": "", "dojazd": "", "mapy": "" }]
+}
 
 WARUNKI:
-- chłodno (~10°C)
-- unikaj roweru
-- mieszaj aktywności
+- jeśli transport = auto → miejsca dalej + info o parkingu (czy płatny)
+- jeśli komunikacja → podaj tramwaj/autobus
+- jeśli pieszo → podaj czas spaceru
+- pogoda chłodna (~10°C)
+- unikaj powtarzania typów
 
-WAŻNE:
-- NIE powtarzaj typów miejsc pod rząd
-- flow dnia: kawa → spacer → atrakcja → jedzenie
-
-Każdy punkt:
-- godzina
-- konkretne miejsce (nazwa)
-- opis klimatu
-- ciekawostka
-- jak się dostać
-
-Styl luźny
-
-FORMAT:
-10:00
-Opis...
-
-11:30
-Opis...
+mapy = link Google Maps
 `;
 
   try {
-    const wynik = await askAI(prompt);
-    res.json({ wynik });
+    const text = await askAI(prompt);
+    const json = JSON.parse(text);
+    res.json(json);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Błąd planu" });
+    res.status(500).json({ error: "Błąd AI" });
   }
 });
 
-//
-// 🍔 JEDZENIE Z GPS (NAPRAWIONE)
-//
-app.post("/food", async (req, res) => {
-
-  const { lat, lon } = req.body;
-
-  const prompt = `
-Znajdź dobre jedzenie BLISKO tej lokalizacji:
-Lat: ${lat}
-Lon: ${lon}
-
-WARUNKI:
-- miejsca w zasięgu spaceru
-- konkretne knajpy (nazwy!)
-- różne typy (burger, pizza, lokalne)
-- podaj ile minut pieszo
-- krótki opis
-
-Styl luźny
-
-FORMAT:
-Nazwa – opis + ile minut pieszo
-`;
-
-  try {
-    const wynik = await askAI(prompt);
-    res.json({ wynik });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Błąd food" });
-  }
-});
-
-//
-// 😴 SKRÓCONY PLAN
-//
-app.post("/short", async (req, res) => {
-
-  const prompt = `
-Stwórz krótki plan dnia we Wrocławiu (max 3 punkty).
-
-WARUNKI:
-- mało chodzenia
-- chill
-- odpoczynek
-
-FORMAT:
-10:00 – coś
-12:00 – coś
-`;
-
-  try {
-    const wynik = await askAI(prompt);
-    res.json({ wynik });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Błąd short" });
-  }
-});
-
-//
-// 🚀 START
-//
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {

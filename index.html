@@ -2,121 +2,55 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<title>Plan dnia</title>
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#111">
-<link rel="manifest" href="manifest.json">
+<title>Planer dnia</title>
 
 <style>
 body {
-  margin: 0;
-  font-family: 'Segoe UI', sans-serif;
-  background: #0f0f0f;
-  color: white;
-  display: flex;
-  justify-content: center;
+  margin:0;
+  font-family: Arial;
+  background: linear-gradient(135deg,#667eea,#764ba2);
+  display:flex;
+  justify-content:center;
 }
 
 .box {
-  width: 95%;
-  max-width: 420px;
-  margin-top: 20px;
+  width:95%;
+  max-width:400px;
+  background:white;
+  margin-top:20px;
+  border-radius:20px;
+  padding:20px;
 }
 
-/* HEADER */
-.header {
-  margin-bottom: 15px;
-}
-
-.header h2 {
-  margin: 0;
-}
-
-.header p {
-  opacity: 0.6;
-}
-
-/* CARD */
 .card {
-  background: #1c1c1c;
-  padding: 15px;
-  border-radius: 18px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  background:#f5f5f5;
+  padding:15px;
+  border-radius:15px;
+  margin-top:15px;
 }
 
-/* INPUT */
-select, button {
-  width: 100%;
-  padding: 14px;
-  border-radius: 12px;
-  border: none;
-  margin-top: 10px;
-  font-size: 15px;
-}
-
-/* BUTTON */
 button {
-  background: linear-gradient(135deg, #6c63ff, #8b5cf6);
-  color: white;
-  font-weight: bold;
-  transition: 0.2s;
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border:none;
+  border-radius:10px;
+  background:#667eea;
+  color:white;
+  font-weight:bold;
 }
 
-button:active {
-  transform: scale(0.95);
+.actions {
+  display:flex;
+  gap:10px;
 }
 
-/* QUICK */
-.quick {
-  display: flex;
-  gap: 10px;
+.actions button {
+  flex:1;
 }
 
-/* BACK */
-.back {
-  background: #333;
-}
-
-/* RESULT */
-#wynik {
-  margin-top: 15px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-/* ITEM */
-.item {
-  background: #1f1f1f;
-  padding: 16px;
-  border-radius: 16px;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.5);
-  opacity: 0;
-  transform: translateY(20px);
-  animation: slideUp 0.4s forwards;
-}
-
-/* MAP LINK */
-.item a {
-  display: inline-block;
-  margin-top: 6px;
-  color: #8b5cf6;
-  font-weight: bold;
-}
-
-/* LOADING */
-.loading {
-  text-align: center;
-  opacity: 0.8;
-}
-
-/* ANIMACJA */
-@keyframes slideUp {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.map-btn {
+  background:#333;
 }
 </style>
 </head>
@@ -124,139 +58,109 @@ button:active {
 <body>
 
 <div class="box">
+<h2>📍 Plan dnia</h2>
 
-  <div class="header">
-    <h2>📍 Twój dzień</h2>
-    <p>Personalny plan dopasowany do Ciebie</p>
-  </div>
+<select id="styl">
+  <option>leniwy</option>
+  <option>aktywny</option>
+</select>
 
-  <div class="card">
-    <select id="styl">
-      <option value="leniwy">😴 Chill</option>
-      <option value="aktywny">🏃 Aktywny</option>
-      <option value="romantyczny">❤️ Randka</option>
-    </select>
+<select id="transport">
+  <option value="pieszo">🚶 pieszo</option>
+  <option value="komunikacja">🚋 komunikacja</option>
+  <option value="auto">🚗 auto</option>
+</select>
 
-    <button onclick="ulozDzien()">🚀 Generuj plan</button>
+<button onclick="start()">🚀 Start</button>
 
-    <div class="quick">
-      <button onclick="glodny()">🍔 Jedzenie</button>
-      <button onclick="zmeczony()">😴 Skróć</button>
-    </div>
-
-    <button class="back" onclick="pokazPlan()">⬅️ Powrót</button>
-  </div>
-
-  <div id="wynik"></div>
-
+<div id="app"></div>
 </div>
 
 <script>
-let ostatniPlan = localStorage.getItem("plan") || "";
+let data = {};
+let sloty = ["kawa","jedzenie","spacer","atrakcja"];
+let currentSlot = 0;
+let index = 0;
+let wybrane = [];
 
-// render
-function render(text){
-  const wynik = document.getElementById("wynik");
-  const linie = text.split("\n");
-
-  let html = "";
-
-  linie.forEach((linia, i) => {
-    linia = linia.trim();
-    if (!linia) return;
-
-    const mapLink = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(linia);
-
-    html += `<div class="item" style="animation-delay:${i*0.08}s">
-      ${linia}
-      <a href="${mapLink}" target="_blank">📍 Mapy</a>
-    </div>`;
-  });
-
-  wynik.innerHTML = html;
-}
-
-// GPS
-function getLocation(){
-  return new Promise((resolve, reject) => {
-    navigator.geolocation.getCurrentPosition(
-      pos => resolve({
-        lat: pos.coords.latitude,
-        lon: pos.coords.longitude
-      }),
-      reject
-    );
-  });
-}
-
-// PLAN
-async function ulozDzien(){
+async function start() {
   const styl = document.getElementById("styl").value;
-  const wynik = document.getElementById("wynik");
-
-  wynik.innerHTML = '<div class="loading">⏳ Generuję...</div>';
+  const transport = document.getElementById("transport").value;
 
   const res = await fetch("/plan", {
     method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({ styl })
+    headers:{ "Content-Type":"application/json"},
+    body:JSON.stringify({ styl, transport })
   });
 
-  const data = await res.json();
+  data = await res.json();
 
-  ostatniPlan = data.wynik;
-  localStorage.setItem("plan", data.wynik);
+  currentSlot = 0;
+  index = 0;
+  wybrane = [];
 
-  render(data.wynik);
+  pokaz();
 }
 
-// FOOD
-async function glodny(){
-  const wynik = document.getElementById("wynik");
+function pokaz() {
+  const app = document.getElementById("app");
 
-  wynik.innerHTML = "📍 Szukam jedzenia...";
-
-  try {
-    const loc = await getLocation();
-
-    const res = await fetch("/food", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify(loc)
-    });
-
-    const data = await res.json();
-    render(data.wynik);
-
-  } catch {
-    wynik.innerHTML = "❌ Brak GPS";
+  if(currentSlot >= sloty.length){
+    pokazPodsumowanie();
+    return;
   }
+
+  const slot = sloty[currentSlot];
+  const item = data[slot][index];
+
+  app.innerHTML = `
+    <h3>${slot.toUpperCase()}</h3>
+
+    <div class="card">
+      <b>${item.name}</b><br><br>
+      ${item.opis}<br><br>
+      🚀 ${item.dojazd}
+    </div>
+
+    <button class="map-btn" onclick="mapa('${item.mapy}')">📍 Mapy</button>
+
+    <div class="actions">
+      <button onclick="next()">❌</button>
+      <button onclick="choose()">👍</button>
+    </div>
+  `;
 }
 
-// SHORT
-async function zmeczony(){
-  const wynik = document.getElementById("wynik");
+function next(){
+  index++;
+  pokaz();
+}
 
-  wynik.innerHTML = "😴 Skracam plan...";
+function choose(){
+  const slot = sloty[currentSlot];
+  wybrane.push(data[slot][index]);
+  currentSlot++;
+  index = 0;
+  pokaz();
+}
 
-  const res = await fetch("/short", {
-    method:"POST"
+function mapa(link){
+  window.open(link,"_blank");
+}
+
+function pokazPodsumowanie(){
+  const app = document.getElementById("app");
+
+  app.innerHTML = "<h3>Twój plan:</h3>";
+
+  wybrane.forEach(x=>{
+    app.innerHTML += `
+      <div class="card">
+        <b>${x.name}</b><br>
+        ${x.opis}
+      </div>
+    `;
   });
-
-  const data = await res.json();
-  render(data.wynik);
-}
-
-// BACK
-function pokazPlan(){
-  if(ostatniPlan){
-    render(ostatniPlan);
-  }
-}
-
-// AUTO LOAD
-if(ostatniPlan){
-  render(ostatniPlan);
 }
 </script>
 
