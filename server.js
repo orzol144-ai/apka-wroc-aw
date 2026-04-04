@@ -12,7 +12,6 @@ app.get("/", (req, res) => {
   res.sendFile(path.resolve("index.html"));
 });
 
-// 🔥 GPT helper
 async function askAI(prompt) {
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
@@ -27,11 +26,9 @@ async function askAI(prompt) {
   });
 
   const data = await response.json();
-
   return data.output[0].content[0].text;
 }
 
-// 🚀 PLAN (NOWY – POD SWIPE)
 app.post("/plan", async (req, res) => {
   const { styl, transport } = req.body;
 
@@ -41,36 +38,33 @@ Stwórz plan dnia we Wrocławiu.
 Styl: ${styl}
 Transport: ${transport}
 
-ZWRÓĆ TYLKO JSON (bez tekstu poza JSON):
+ZWRÓĆ TYLKO JSON:
 
 {
-  "kawa": [
-    {
-      "name": "Nazwa miejsca",
-      "opis": "krótki klimat + ciekawostka",
-      "dojazd": "jak się dostać (${transport})",
-      "mapy": "link do google maps"
-    }
-  ],
-  "jedzenie": [...],
-  "spacer": [...],
-  "atrakcja": [...]
+  "kawa": [{ "name": "", "opis": "", "dojazd": "" }],
+  "jedzenie": [{ "name": "", "opis": "", "dojazd": "" }],
+  "spacer": [{ "name": "", "opis": "", "dojazd": "" }],
+  "atrakcja": [{ "name": "", "opis": "", "dojazd": "" }]
 }
 
-WARUNKI:
-- pogoda chłodna (~10°C)
-- brak roweru
-- miejsca realistyczne (Wrocław)
-- NIE powtarzaj typów
-- różnorodność
+WAŻNE:
+- plan ma być logiczny geograficznie (blisko siebie)
+- max 10-15 min między punktami
+- układaj trasę jak spacer „po drodze”
+- NIE skacz po całym mieście
+- używaj konkretnych miejsc we Wrocławiu
+- podawaj okolice (np. Rynek, Nadodrze)
+- jeśli dalej → podaj tramwaj/autobus i czas
 
-Każda kategoria: MIN 3 propozycje
+Styl:
+- krótko, konkretnie, bez lania wody
+
+Każda kategoria min 3 propozycje
 `;
 
   try {
     let text = await askAI(prompt);
 
-    // 🧹 czyszczenie JSONa
     text = text.replace(/```json/g, "").replace(/```/g, "").trim();
 
     const parsed = JSON.parse(text);
@@ -79,11 +73,10 @@ Każda kategoria: MIN 3 propozycje
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Błąd serwera" });
+    res.status(500).json({ error: "Błąd AI" });
   }
 });
 
-// 🚀 PORT
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {

@@ -118,7 +118,6 @@ let index = 0;
 let wybrane = [];
 let startX = 0;
 
-// START
 async function start(){
   const styl = document.getElementById("styl").value;
   const transport = document.getElementById("transport").value;
@@ -140,38 +139,39 @@ async function start(){
   pokaz();
 }
 
-// GŁODNY
 function glodny(){
   currentSlot = 1;
   index = 0;
   pokaz();
 }
 
-// ZMĘCZONY
 function zmeczony(){
   currentSlot = 2;
   index = 0;
   pokaz();
 }
 
-// POKAZ
 function pokaz(){
   const app = document.getElementById("app");
 
   const slot = sloty[currentSlot];
   const lista = data[slot];
 
-  if(!lista || lista.length === 0){
+  if(!lista){
     app.innerHTML = "❌ Brak danych";
     return;
   }
 
   const item = lista[index];
 
-  // 🔥 LEPSZE ZDJĘCIA
-  const img = `https://source.unsplash.com/600x400/?${encodeURIComponent(item.name + " Wrocław")}`;
+  let keyword = "city";
+  if(slot==="kawa") keyword="cafe";
+  if(slot==="jedzenie") keyword="restaurant";
+  if(slot==="spacer") keyword="park";
+  if(slot==="atrakcja") keyword="city landmark";
 
-  // 🔥 MAPA ZAWSZE DZIAŁA
+  const img = `https://source.unsplash.com/600x400/?${keyword}&sig=${index}`;
+
   const mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`;
 
   app.innerHTML = `
@@ -184,7 +184,7 @@ function pokaz(){
       🚀 ${item.dojazd}
     </div>
 
-    <button class="map-btn" onclick="window.open('${mapLink}')">📍 Otwórz w Mapach</button>
+    <button class="map-btn" onclick="window.open('${mapLink}')">📍 Mapy</button>
 
     <div class="actions">
       <button onclick="next()">❌</button>
@@ -195,7 +195,6 @@ function pokaz(){
   swipe();
 }
 
-// SWIPE
 function swipe(){
   const card = document.getElementById("card");
 
@@ -214,7 +213,6 @@ function swipe(){
   });
 }
 
-// NEXT
 function next(){
   index++;
   if(index >= data[sloty[currentSlot]].length){
@@ -223,7 +221,6 @@ function next(){
   pokaz();
 }
 
-// CHOOSE
 function choose(){
   const slot = sloty[currentSlot];
   wybrane.push(data[slot][index]);
@@ -238,7 +235,6 @@ function choose(){
   }
 }
 
-// PODSUMOWANIE
 function podsumowanie(){
   const app = document.getElementById("app");
 
@@ -256,10 +252,9 @@ function podsumowanie(){
     `;
   });
 
-  app.innerHTML += `<button class="save-btn" onclick="zapisz()">💾 Zapisz plan</button>`;
+  app.innerHTML += `<button class="save-btn" onclick="zapisz()">💾 Zapisz</button>`;
 }
 
-// ZAPIS
 function zapisz(){
   let p = JSON.parse(localStorage.getItem("plany")||"[]");
   p.push(wybrane);
@@ -267,7 +262,6 @@ function zapisz(){
   alert("Zapisano 👍");
 }
 
-// ZAPISANE
 function pokazZapisane(){
   const app = document.getElementById("app");
   const p = JSON.parse(localStorage.getItem("plany")||"[]");
