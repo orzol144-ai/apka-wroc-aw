@@ -1,52 +1,54 @@
 <!DOCTYPE html>
-<html>
+<html lang="pl">
 <head>
 <meta charset="UTF-8">
-<title>Planer dnia</title>
+<title>Plan dnia</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#667eea">
+
+<link rel="manifest" href="manifest.json">
 
 <style>
 body {
   margin: 0;
   font-family: Arial, sans-serif;
   background: linear-gradient(135deg, #667eea, #764ba2);
+  min-height: 100vh;
   display: flex;
   justify-content: center;
+  align-items: flex-start;
 }
 
+/* kontener */
 .box {
   background: rgba(255,255,255,0.95);
-  margin-top: 40px;
-  padding: 20px;
-  border-radius: 20px;
   width: 90%;
   max-width: 400px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-}
-
-h2 {
+  margin-top: 20px;
+  padding: 25px;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
   text-align: center;
 }
 
+/* select + button */
 select, button {
   width: 100%;
   padding: 14px;
-  margin-top: 10px;
   border-radius: 12px;
   border: none;
-  font-size: 16px;
+  margin-top: 10px;
+  font-size: 15px;
 }
 
 button {
   background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
   font-weight: bold;
-  cursor: pointer;
 }
 
-button:active {
-  transform: scale(0.97);
-}
-
+/* wynik */
 #wynik {
   margin-top: 20px;
   display: flex;
@@ -59,33 +61,25 @@ button:active {
   background: #f7f7f7;
   padding: 14px;
   border-radius: 12px;
+  text-align: left;
   opacity: 0;
   animation: fadeIn 0.4s ease forwards;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
 /* animacja */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* loading */
 .loading {
-  text-align: center;
   font-weight: bold;
-  color: #333;
+  color: #667eea;
 }
 </style>
 </head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="manifest" href="manifest.json">
+
 <body>
 
 <div class="box">
@@ -107,7 +101,7 @@ async function ulozDzien() {
   const styl = document.getElementById("styl").value;
   const wynik = document.getElementById("wynik");
 
-  wynik.innerHTML = '<div class="loading">⏳ Generuję plan...</div>';
+  wynik.innerHTML = '<span class="loading">⏳ Generuję plan...</span>';
 
   try {
     const res = await fetch("https://apka-wroc-aw-1.onrender.com/plan", {
@@ -122,23 +116,30 @@ async function ulozDzien() {
 
     console.log("ODPOWIEDŹ:", data);
 
-    const linie = data.wynik.split('\n');
-    let html = '';
+    const linie = data.wynik.split("\n");
+    let html = "";
+    let poprzedniaGodzina = "";
 
     linie.forEach((linia, i) => {
       linia = linia.trim();
-      if (linia === '') return;
+      if (linia === "") return;
 
-      html += `<div class="item" style="animation-delay:${i * 0.15}s">
-        ${linia}
-      </div>`;
+      if (linia.match(/^\d{1,2}:\d{2}/)) {
+        poprzedniaGodzina = linia;
+      } else {
+        html += `
+        <div class="item" style="animation-delay:${i * 0.15}s">
+          <strong>${poprzedniaGodzina}</strong><br>
+          ${linia}
+        </div>`;
+      }
     });
 
     wynik.innerHTML = html;
 
   } catch (err) {
     console.log("BŁĄD:", err);
-    wynik.innerHTML = "❌ Błąd połączenia";
+    wynik.innerText = "❌ Błąd połączenia";
   }
 }
 </script>
