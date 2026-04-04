@@ -81,10 +81,10 @@ async function ulozDzien() {
   const styl = document.getElementById("styl").value;
   const wynik = document.getElementById("wynik");
 
-  wynik.innerHTML = "<span class='loading'>⏳ Generuję plan...</span>";
+  wynik.innerText = "Myślę...";
 
   try {
-    const res = await fetch(https://apka-wroc-aw-1.onrender.com/plan", {
+    const res = await fetch("https://apka-wroc-aw-1.onrender.com/plan", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -94,13 +94,12 @@ async function ulozDzien() {
 
     const data = await res.json();
 
-    wynik.innerText = data.wynik;
+    console.log("ODPOWIEDŹ:", data);
 
+    wynik.innerText = data.wynik;
   } catch (err) {
+    console.log("BŁĄD:", err);
     wynik.innerText = "❌ Błąd połączenia";
   }
 }
 </script>
-
-</body>
-</html>
