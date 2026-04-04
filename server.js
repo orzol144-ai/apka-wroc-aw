@@ -12,6 +12,7 @@ app.get("/", (req, res) => {
   res.sendFile(path.resolve("index.html"));
 });
 
+// 🔥 GPT helper
 async function askAI(prompt) {
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
@@ -26,10 +27,11 @@ async function askAI(prompt) {
   });
 
   const data = await response.json();
+
   return data.output[0].content[0].text;
 }
 
-// 📍 PLAN ZE SLOTAMI
+// 🚀 PLAN (NOWY – POD SWIPE)
 app.post("/plan", async (req, res) => {
   const { styl, transport } = req.body;
 
@@ -39,35 +41,49 @@ Stwórz plan dnia we Wrocławiu.
 Styl: ${styl}
 Transport: ${transport}
 
-ZWRÓĆ JSON (bez tekstu poza JSON):
+ZWRÓĆ TYLKO JSON (bez tekstu poza JSON):
 
 {
-  "kawa": [{ "name": "", "opis": "", "dojazd": "", "mapy": "" }],
-  "jedzenie": [{ "name": "", "opis": "", "dojazd": "", "mapy": "" }],
-  "spacer": [{ "name": "", "opis": "", "dojazd": "", "mapy": "" }],
-  "atrakcja": [{ "name": "", "opis": "", "dojazd": "", "mapy": "" }]
+  "kawa": [
+    {
+      "name": "Nazwa miejsca",
+      "opis": "krótki klimat + ciekawostka",
+      "dojazd": "jak się dostać (${transport})",
+      "mapy": "link do google maps"
+    }
+  ],
+  "jedzenie": [...],
+  "spacer": [...],
+  "atrakcja": [...]
 }
 
 WARUNKI:
-- jeśli transport = auto → miejsca dalej + info o parkingu (czy płatny)
-- jeśli komunikacja → podaj tramwaj/autobus
-- jeśli pieszo → podaj czas spaceru
 - pogoda chłodna (~10°C)
-- unikaj powtarzania typów
+- brak roweru
+- miejsca realistyczne (Wrocław)
+- NIE powtarzaj typów
+- różnorodność
 
-mapy = link Google Maps
+Każda kategoria: MIN 3 propozycje
 `;
 
   try {
-    const text = await askAI(prompt);
-    const json = JSON.parse(text);
-    res.json(json);
+    let text = await askAI(prompt);
+
+    // 🧹 czyszczenie JSONa
+    text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+
+    const parsed = JSON.parse(text);
+
+    res.json(parsed);
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Błąd AI" });
+    res.status(500).json({ error: "Błąd serwera" });
   }
 });
 
+// 🚀 PORT
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
