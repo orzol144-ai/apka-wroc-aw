@@ -139,18 +139,6 @@ async function start(){
   pokaz();
 }
 
-function glodny(){
-  currentSlot = 1;
-  index = 0;
-  pokaz();
-}
-
-function zmeczony(){
-  currentSlot = 2;
-  index = 0;
-  pokaz();
-}
-
 function pokaz(){
   const app = document.getElementById("app");
 
@@ -164,13 +152,8 @@ function pokaz(){
 
   const item = lista[index];
 
-  let keyword = "city";
-  if(slot==="kawa") keyword="cafe";
-  if(slot==="jedzenie") keyword="restaurant";
-  if(slot==="spacer") keyword="park";
-  if(slot==="atrakcja") keyword="city landmark";
-
-  const img = `https://source.unsplash.com/600x400/?${keyword}&sig=${index}`;
+  // 🔥 STABILNE ZDJĘCIA
+  const img = `https://picsum.photos/600/400?random=${index+currentSlot}`;
 
   const mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`;
 
@@ -179,7 +162,7 @@ function pokaz(){
 
     <div class="card" id="card">
       <img src="${img}">
-      <b>${item.name}</b><br><br>
+      <b>${item.time} – ${item.name}</b><br><br>
       ${item.opis}<br><br>
       🚀 ${item.dojazd}
     </div>
@@ -245,7 +228,7 @@ function podsumowanie(){
 
     app.innerHTML += `
       <div class="card">
-        <b>${x.name}</b><br><br>
+        <b>${x.time} – ${x.name}</b><br><br>
         ${x.opis}<br><br>
         <a href="${mapLink}" target="_blank">📍 Mapy</a>
       </div>

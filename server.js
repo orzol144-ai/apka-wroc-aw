@@ -38,28 +38,31 @@ Stwórz plan dnia we Wrocławiu.
 Styl: ${styl}
 Transport: ${transport}
 
-ZWRÓĆ TYLKO JSON:
+ZWRÓĆ JSON:
 
 {
-  "kawa": [{ "name": "", "opis": "", "dojazd": "" }],
-  "jedzenie": [{ "name": "", "opis": "", "dojazd": "" }],
-  "spacer": [{ "name": "", "opis": "", "dojazd": "" }],
-  "atrakcja": [{ "name": "", "opis": "", "dojazd": "" }]
+  "kawa": [{ "time": "", "name": "", "opis": "", "dojazd": "" }],
+  "jedzenie": [{ "time": "", "name": "", "opis": "", "dojazd": "" }],
+  "spacer": [{ "time": "", "name": "", "opis": "", "dojazd": "" }],
+  "atrakcja": [{ "time": "", "name": "", "opis": "", "dojazd": "" }]
 }
 
 WAŻNE:
-- plan ma być logiczny geograficznie (blisko siebie)
-- max 10-15 min między punktami
-- układaj trasę jak spacer „po drodze”
-- NIE skacz po całym mieście
-- używaj konkretnych miejsc we Wrocławiu
-- podawaj okolice (np. Rynek, Nadodrze)
-- jeśli dalej → podaj tramwaj/autobus i czas
+- dodaj GODZINY (np. 10:00, 11:30 itd.)
+- plan ma być po kolei (flow dnia)
+- miejsca blisko siebie (max 10-15 min)
+- nie skacz po mieście
+- konkretne miejsca (Wrocław)
 
-Styl:
-- krótko, konkretnie, bez lania wody
+OPIS:
+- max 2 zdania
+- konkretny klimat miejsca (np. „mała klimatyczna kawiarnia przy rynku”)
+- zero ogólników typu „fajne miejsce”
 
-Każda kategoria min 3 propozycje
+DOJAZD:
+- podaj konkretnie (pieszo / tramwaj + ile minut)
+
+Każda kategoria min 3 opcje
 `;
 
   try {
