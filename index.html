@@ -133,11 +133,6 @@ async function start(){
 
   data = await res.json();
 
-  if(!data.kawa){
-    document.getElementById("app").innerHTML = "❌ Błąd danych z serwera";
-    return;
-  }
-
   currentSlot = 0;
   index = 0;
   wybrane = [];
@@ -147,7 +142,6 @@ async function start(){
 
 // GŁODNY
 function glodny(){
-  if(!data.jedzenie) return;
   currentSlot = 1;
   index = 0;
   pokaz();
@@ -155,7 +149,6 @@ function glodny(){
 
 // ZMĘCZONY
 function zmeczony(){
-  if(!data.spacer) return;
   currentSlot = 2;
   index = 0;
   pokaz();
@@ -175,8 +168,11 @@ function pokaz(){
 
   const item = lista[index];
 
-  // 🔥 stabilne zdjęcie
-  const img = `https://picsum.photos/400/250?random=${index+currentSlot}`;
+  // 🔥 LEPSZE ZDJĘCIA
+  const img = `https://source.unsplash.com/600x400/?${encodeURIComponent(item.name + " Wrocław")}`;
+
+  // 🔥 MAPA ZAWSZE DZIAŁA
+  const mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`;
 
   app.innerHTML = `
     <h3>${slot.toUpperCase()}</h3>
@@ -188,7 +184,7 @@ function pokaz(){
       🚀 ${item.dojazd}
     </div>
 
-    <button class="map-btn" onclick="mapa('${item.name}')">📍 Mapy</button>
+    <button class="map-btn" onclick="window.open('${mapLink}')">📍 Otwórz w Mapach</button>
 
     <div class="actions">
       <button onclick="next()">❌</button>
@@ -220,14 +216,10 @@ function swipe(){
 
 // NEXT
 function next(){
-  const lista = data[sloty[currentSlot]];
-
   index++;
-
-  if(index >= lista.length){
+  if(index >= data[sloty[currentSlot]].length){
     index = 0;
   }
-
   pokaz();
 }
 
@@ -246,11 +238,6 @@ function choose(){
   }
 }
 
-// MAPY
-function mapa(name){
-  window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`);
-}
-
 // PODSUMOWANIE
 function podsumowanie(){
   const app = document.getElementById("app");
@@ -258,10 +245,13 @@ function podsumowanie(){
   app.innerHTML = "<h3>🔥 Twój plan:</h3>";
 
   wybrane.forEach(x=>{
+    const mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(x.name)}`;
+
     app.innerHTML += `
       <div class="card">
         <b>${x.name}</b><br><br>
-        ${x.opis}
+        ${x.opis}<br><br>
+        <a href="${mapLink}" target="_blank">📍 Mapy</a>
       </div>
     `;
   });
