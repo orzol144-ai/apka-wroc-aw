@@ -222,21 +222,14 @@ async function ulozDzien() {
 const linie = data.wynik.split('\n');
 let html = '';
 
-let poprzedniaGodzina = '';
-
 linie.forEach((linia, i) => {
   linia = linia.trim();
 
   if (linia === '') return;
 
-  if (linia.includes(':')) {
-    poprzedniaGodzina = linia;
-  } else {
-    html += `<div class="item" style="animation-delay: ${i * 0.2}s">
-      <strong>${poprzedniaGodzina}</strong><br>
-      ${linia}
-    </div>`;
-  }
+  html += `<div class="item" style="animation-delay: ${i * 0.2}s">
+    ${linia}
+  </div>`;
 });
 
 wynik.innerHTML = html;
