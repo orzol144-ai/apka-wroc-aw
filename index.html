@@ -1,4 +1,3 @@
-<h1 style="color:red">NOWA WERSJA DZIAŁA</h1>
 <!DOCTYPE html>
 <html>
 <head>
@@ -230,7 +229,7 @@ linie.forEach((linia, i) => {
 
   if (linia === '') return;
 
-  if (linia.match(/^\d{1,2}:\d{2}/)) {
+  if (linia.includes(':')) {
     poprzedniaGodzina = linia;
   } else {
     html += `<div class="item" style="animation-delay: ${i * 0.2}s">
