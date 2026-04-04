@@ -24,9 +24,21 @@ body {
 
 .card {
   background:#f5f5f5;
-  padding:15px;
+  padding:20px;
   border-radius:15px;
   margin-top:15px;
+  transition: transform 0.3s, opacity 0.3s;
+  touch-action: pan-y;
+}
+
+.swipe-left {
+  transform: translateX(-100px);
+  opacity:0;
+}
+
+.swipe-right {
+  transform: translateX(100px);
+  opacity:0;
 }
 
 button {
@@ -52,6 +64,10 @@ button {
 .map-btn {
   background:#333;
 }
+
+.save-btn {
+  background:#28a745;
+}
 </style>
 </head>
 
@@ -72,6 +88,7 @@ button {
 </select>
 
 <button onclick="start()">🚀 Start</button>
+<button onclick="pokazZapisane()">📂 Zapisane plany</button>
 
 <div id="app"></div>
 </div>
@@ -83,6 +100,9 @@ let currentSlot = 0;
 let index = 0;
 let wybrane = [];
 
+let startX = 0;
+
+// START
 async function start() {
   const styl = document.getElementById("styl").value;
   const transport = document.getElementById("transport").value;
@@ -102,6 +122,7 @@ async function start() {
   pokaz();
 }
 
+// POKAZ KARTĘ
 function pokaz() {
   const app = document.getElementById("app");
 
@@ -116,7 +137,7 @@ function pokaz() {
   app.innerHTML = `
     <h3>${slot.toUpperCase()}</h3>
 
-    <div class="card">
+    <div class="card" id="card">
       <b>${item.name}</b><br><br>
       ${item.opis}<br><br>
       🚀 ${item.dojazd}
@@ -129,13 +150,39 @@ function pokaz() {
       <button onclick="choose()">👍</button>
     </div>
   `;
+
+  dodajSwipe();
 }
 
+// SWIPE
+function dodajSwipe(){
+  const card = document.getElementById("card");
+
+  card.addEventListener("touchstart", e=>{
+    startX = e.touches[0].clientX;
+  });
+
+  card.addEventListener("touchend", e=>{
+    let endX = e.changedTouches[0].clientX;
+    let diff = endX - startX;
+
+    if(diff > 50){
+      card.classList.add("swipe-right");
+      setTimeout(choose,200);
+    } else if(diff < -50){
+      card.classList.add("swipe-left");
+      setTimeout(next,200);
+    }
+  });
+}
+
+// NEXT
 function next(){
   index++;
   pokaz();
 }
 
+// CHOOSE
 function choose(){
   const slot = sloty[currentSlot];
   wybrane.push(data[slot][index]);
@@ -144,10 +191,12 @@ function choose(){
   pokaz();
 }
 
+// MAPA
 function mapa(link){
   window.open(link,"_blank");
 }
 
+// PODSUMOWANIE + ZAPIS
 function pokazPodsumowanie(){
   const app = document.getElementById("app");
 
@@ -160,6 +209,32 @@ function pokazPodsumowanie(){
         ${x.opis}
       </div>
     `;
+  });
+
+  app.innerHTML += `<button class="save-btn" onclick="zapisz()">💾 Zapisz plan</button>`;
+}
+
+// ZAPIS
+function zapisz(){
+  let zapisane = JSON.parse(localStorage.getItem("plany") || "[]");
+  zapisane.push(wybrane);
+  localStorage.setItem("plany", JSON.stringify(zapisane));
+  alert("Zapisano!");
+}
+
+// POKAŻ ZAPISANE
+function pokazZapisane(){
+  const app = document.getElementById("app");
+  const zapisane = JSON.parse(localStorage.getItem("plany") || "[]");
+
+  app.innerHTML = "<h3>Zapisane plany:</h3>";
+
+  zapisane.forEach((plan,i)=>{
+    app.innerHTML += `<div class="card"><b>Plan ${i+1}</b><br>`;
+    plan.forEach(p=>{
+      app.innerHTML += `${p.name}<br>`;
+    });
+    app.innerHTML += "</div>";
   });
 }
 </script>
