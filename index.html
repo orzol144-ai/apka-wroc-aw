@@ -52,7 +52,6 @@ button {
   padding:15px;
   border-radius:15px;
   margin-top:15px;
-  transition:0.3s;
 }
 
 .card img {
@@ -117,13 +116,14 @@ let sloty = ["kawa","jedzenie","spacer","atrakcja"];
 let currentSlot = 0;
 let index = 0;
 let wybrane = [];
-
 let startX = 0;
 
-// 🔥 START
+// START
 async function start(){
   const styl = document.getElementById("styl").value;
   const transport = document.getElementById("transport").value;
+
+  document.getElementById("app").innerHTML = "⏳ Generuję...";
 
   const res = await fetch("/plan",{
     method:"POST",
@@ -133,6 +133,11 @@ async function start(){
 
   data = await res.json();
 
+  if(!data.kawa){
+    document.getElementById("app").innerHTML = "❌ Błąd danych z serwera";
+    return;
+  }
+
   currentSlot = 0;
   index = 0;
   wybrane = [];
@@ -140,34 +145,38 @@ async function start(){
   pokaz();
 }
 
-// 🍔 GŁODNY
+// GŁODNY
 function glodny(){
+  if(!data.jedzenie) return;
   currentSlot = 1;
   index = 0;
   pokaz();
 }
 
-// 😴 ODPOCZYNEK
+// ZMĘCZONY
 function zmeczony(){
+  if(!data.spacer) return;
   currentSlot = 2;
   index = 0;
   pokaz();
 }
 
-// 🔥 POKAZ KARTĘ
+// POKAZ
 function pokaz(){
   const app = document.getElementById("app");
 
-  if(currentSlot >= sloty.length){
-    podsumowanie();
+  const slot = sloty[currentSlot];
+  const lista = data[slot];
+
+  if(!lista || lista.length === 0){
+    app.innerHTML = "❌ Brak danych";
     return;
   }
 
-  const slot = sloty[currentSlot];
-  const item = data[slot][index];
+  const item = lista[index];
 
-  // 🔥 STABILNE ZDJĘCIA
-  const img = `https://picsum.photos/400/250?random=${item.name.length + index}`;
+  // 🔥 stabilne zdjęcie
+  const img = `https://picsum.photos/400/250?random=${index+currentSlot}`;
 
   app.innerHTML = `
     <h3>${slot.toUpperCase()}</h3>
@@ -190,7 +199,7 @@ function pokaz(){
   swipe();
 }
 
-// 🔥 SWIPE
+// SWIPE
 function swipe(){
   const card = document.getElementById("card");
 
@@ -209,30 +218,40 @@ function swipe(){
   });
 }
 
-// ❌ NEXT
+// NEXT
 function next(){
+  const lista = data[sloty[currentSlot]];
+
   index++;
-  if(index >= data[sloty[currentSlot]].length){
+
+  if(index >= lista.length){
     index = 0;
   }
+
   pokaz();
 }
 
-// 👍 CHOOSE
+// CHOOSE
 function choose(){
   const slot = sloty[currentSlot];
   wybrane.push(data[slot][index]);
+
   currentSlot++;
   index = 0;
-  pokaz();
+
+  if(currentSlot >= sloty.length){
+    podsumowanie();
+  } else {
+    pokaz();
+  }
 }
 
-// 📍 MAPA
+// MAPY
 function mapa(name){
   window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`);
 }
 
-// 📦 PODSUMOWANIE
+// PODSUMOWANIE
 function podsumowanie(){
   const app = document.getElementById("app");
 
@@ -247,10 +266,10 @@ function podsumowanie(){
     `;
   });
 
-  app.innerHTML += `<button class="save-btn" onclick="zapisz()">💾 Zapisz</button>`;
+  app.innerHTML += `<button class="save-btn" onclick="zapisz()">💾 Zapisz plan</button>`;
 }
 
-// 💾 ZAPIS
+// ZAPIS
 function zapisz(){
   let p = JSON.parse(localStorage.getItem("plany")||"[]");
   p.push(wybrane);
@@ -258,7 +277,7 @@ function zapisz(){
   alert("Zapisano 👍");
 }
 
-// 📂 ZAPISANE
+// ZAPISANE
 function pokazZapisane(){
   const app = document.getElementById("app");
   const p = JSON.parse(localStorage.getItem("plany")||"[]");
