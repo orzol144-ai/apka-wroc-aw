@@ -1,11 +1,19 @@
 import express from "express";
 import cors from "cors";
 import OpenAI from "openai";
+import path from "path";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+// pokazuje pliki (np. index.html)
+app.use(express.static("."));
+
+// główna strona
+app.get("/", (req, res) => {
+  res.sendFile(path.resolve("index.html"));
+});
 // 🔐 klucz z ENV (Render / lokalnie)
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
