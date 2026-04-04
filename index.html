@@ -221,23 +221,10 @@ async function ulozDzien() {
 
 const linie = data.wynik.split('\n');
 let html = '';
-let poprzedniaGodzina = '';
-let licznik = 0;
 
-linie.forEach((linia) => {
-  linia = linia.trim();
-
-  if (linia === '') return;
-
-  if (linia.match(/^\d{1,2}:\d{2}/)) {
-    poprzedniaGodzina = linia;
-  } else {
-    html += `<div class="item" style="animation-delay: ${licznik * 0.15}s">
-      ⏰ ${poprzedniaGodzina}<br>
-      📍 ${linia}
-    </div>`;
-
-    licznik++;
+linie.forEach((linia, i) => {
+  if (linia.trim() !== '') {
+    html += `<div class="item" style="animation-delay:${i * 0.15}s">${linia}</div>`;
   }
 });
 
