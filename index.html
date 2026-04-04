@@ -54,6 +54,24 @@ button {
   transition: 0.2s;
 }
 
+.item {
+  background: white;
+  margin: 10px 0;
+  padding: 12px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  transition: 0.2s;
+}
+
+.item:hover {
+  transform: scale(1.02);
+}
+
+.end {
+  margin-top: 15px;
+  font-weight: bold;
+  text-align: center;
+}
 .subtitle {
   color: #666;
   font-size: 14px;
@@ -142,7 +160,7 @@ async function ulozDzien() {
 
     console.log("ODPOWIEDŹ:", data);
 
-    wynik.innerText = data.wynik;
+    wynik.innerHTML = data.wynik;
   } catch (err) {
     console.log("BŁĄD:", err);
     wynik.innerText = "❌ Błąd połączenia";
