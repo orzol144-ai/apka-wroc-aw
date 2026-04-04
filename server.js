@@ -25,29 +25,35 @@ app.post("/plan", async (req, res) => {
   const prompt = `
 Stwórz szczegółowy plan dnia we Wrocławiu dla stylu: ${styl}.
 
-Uwzględnij:
-- Aktualna pogoda: chłodno (ok. 10°C), możliwe zachmurzenie
+WARUNKI:
+- Aktualna pogoda: chłodno (~10°C), możliwe zachmurzenie
 - Unikaj aktywności typu rower jeśli zimno
-- Preferuj miejsca pod dachem + klimatyczne spacery
+- Preferuj miejsca pod dachem + krótkie spacery
 
-Każdy punkt musi zawierać:
+WAŻNE:
+- NIE powtarzaj tego samego typu miejsca pod rząd (np. 2 kawiarnie, 2 restauracje)
+- Plan ma być zróżnicowany: kawa → spacer → atrakcja → jedzenie → coś ciekawego
+- Zachowaj naturalny rytm dnia
+
+Każdy punkt MUSI zawierać:
 - godzinę
-- konkretne miejsce (nazwa!)
+- KONKRETNE miejsce (nazwa!)
 - krótki opis klimatu
-- ciekawostkę o miejscu (jeśli możliwe)
-- jak się tam dostać (np. spacer, tramwaj)
+- ciekawostkę (jeśli możliwe)
+- jak się tam dostać (np. 5 min pieszo / tramwaj)
 
 Styl:
-- luźny, naturalny, jak polecenie od znajomego
+- luźny, jak polecenie od znajomego
+- zero sztucznego gadania
 
-Format (BARDZO WAŻNE):
+FORMAT:
 10:00
 Kawiarnia X – opis... Dojście...
 
 11:30
 Miejsce Y – opis...
 
-Bez znaków typu *, #, list itd.
+Bez znaków typu *, #, list punktowanych.
 
 Na końcu dodaj krótkie podsumowanie dnia.
 `;
