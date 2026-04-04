@@ -48,19 +48,24 @@ ZWRÓĆ JSON:
 }
 
 WAŻNE:
-- dodaj GODZINY (np. 10:00, 11:30 itd.)
-- plan ma być po kolei (flow dnia)
-- miejsca blisko siebie (max 10-15 min)
-- nie skacz po mieście
-- konkretne miejsca (Wrocław)
+- plan ma być logiczny (miejsca blisko siebie)
+- max 10-15 min między punktami
+- układaj trasę jak spacer „po drodze”
+- NIE skacz po całym mieście
+- podawaj okolice (np. Rynek, Ostrów Tumski)
+
+GODZINY:
+- dodaj konkretne godziny (10:00, 11:30 itd.)
+- plan ma mieć flow dnia
 
 OPIS:
-- max 2 zdania
-- konkretny klimat miejsca (np. „mała klimatyczna kawiarnia przy rynku”)
-- zero ogólników typu „fajne miejsce”
+- 2–3 zdania (nie krócej)
+- MUSI zawierać ciekawostkę (np. historia, klimat, coś unikalnego)
+- unikaj ogólników typu „fajne miejsce”
+- pisz jak znajomy polecający miejscówkę
 
 DOJAZD:
-- podaj konkretnie (pieszo / tramwaj + ile minut)
+- podaj konkretnie: pieszo / tramwaj + ile minut
 
 Każda kategoria min 3 opcje
 `;
