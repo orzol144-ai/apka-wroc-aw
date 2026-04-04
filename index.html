@@ -7,58 +7,53 @@
 <style>
 body {
   margin:0;
-  font-family: Arial;
+  font-family: Arial, sans-serif;
   background: linear-gradient(135deg,#667eea,#764ba2);
+  min-height:100vh;
   display:flex;
   justify-content:center;
+  align-items:flex-start;
 }
 
 .box {
   width:95%;
-  max-width:400px;
-  background:white;
-  margin-top:20px;
+  max-width:420px;
+  background:rgba(255,255,255,0.95);
+  backdrop-filter: blur(10px);
+  margin-top:30px;
   border-radius:20px;
   padding:20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
 }
 
-.card {
-  background:#f5f5f5;
-  padding:20px;
-  border-radius:15px;
-  margin-top:15px;
-  transition: transform 0.3s, opacity 0.3s;
-  touch-action: pan-y;
+h2 {
+  text-align:center;
+  margin-bottom:15px;
 }
 
-.swipe-left {
-  transform: translateX(-100px);
-  opacity:0;
-}
-
-.swipe-right {
-  transform: translateX(100px);
-  opacity:0;
-}
-
-button {
+select, button {
   width:100%;
   padding:12px;
   margin-top:10px;
   border:none;
-  border-radius:10px;
-  background:#667eea;
+  border-radius:12px;
+  font-size:15px;
+}
+
+select {
+  background:#f2f2f2;
+}
+
+button {
+  background: linear-gradient(135deg,#667eea,#764ba2);
   color:white;
   font-weight:bold;
+  cursor:pointer;
+  transition:0.2s;
 }
 
-.actions {
-  display:flex;
-  gap:10px;
-}
-
-.actions button {
-  flex:1;
+button:active {
+  transform:scale(0.97);
 }
 
 .map-btn {
@@ -67,6 +62,36 @@ button {
 
 .save-btn {
   background:#28a745;
+}
+
+.card {
+  background:white;
+  padding:18px;
+  border-radius:15px;
+  margin-top:15px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  transition: transform 0.3s, opacity 0.3s;
+  touch-action: pan-y;
+}
+
+.swipe-left {
+  transform: translateX(-120px);
+  opacity:0;
+}
+
+.swipe-right {
+  transform: translateX(120px);
+  opacity:0;
+}
+
+.actions {
+  display:flex;
+  gap:10px;
+  margin-top:10px;
+}
+
+.actions button {
+  flex:1;
 }
 </style>
 </head>
@@ -77,14 +102,14 @@ button {
 <h2>📍 Plan dnia</h2>
 
 <select id="styl">
-  <option>leniwy</option>
-  <option>aktywny</option>
+  <option value="leniwy">😴 Leniwy</option>
+  <option value="aktywny">🏃 Aktywny</option>
 </select>
 
 <select id="transport">
-  <option value="pieszo">🚶 pieszo</option>
-  <option value="komunikacja">🚋 komunikacja</option>
-  <option value="auto">🚗 auto</option>
+  <option value="pieszo">🚶 Pieszo</option>
+  <option value="komunikacja">🚋 Komunikacja</option>
+  <option value="auto">🚗 Auto</option>
 </select>
 
 <button onclick="start()">🚀 Start</button>
@@ -122,7 +147,7 @@ async function start() {
   pokaz();
 }
 
-// POKAZ KARTĘ
+// POKAZ
 function pokaz() {
   const app = document.getElementById("app");
 
@@ -143,7 +168,7 @@ function pokaz() {
       🚀 ${item.dojazd}
     </div>
 
-    <button class="map-btn" onclick="mapa('${item.mapy}')">📍 Mapy</button>
+    <button class="map-btn" onclick="mapa('${item.mapy}')">📍 Otwórz w mapach</button>
 
     <div class="actions">
       <button onclick="next()">❌</button>
@@ -166,10 +191,10 @@ function dodajSwipe(){
     let endX = e.changedTouches[0].clientX;
     let diff = endX - startX;
 
-    if(diff > 50){
+    if(diff > 60){
       card.classList.add("swipe-right");
       setTimeout(choose,200);
-    } else if(diff < -50){
+    } else if(diff < -60){
       card.classList.add("swipe-left");
       setTimeout(next,200);
     }
@@ -196,16 +221,16 @@ function mapa(link){
   window.open(link,"_blank");
 }
 
-// PODSUMOWANIE + ZAPIS
+// PODSUMOWANIE
 function pokazPodsumowanie(){
   const app = document.getElementById("app");
 
-  app.innerHTML = "<h3>Twój plan:</h3>";
+  app.innerHTML = "<h3>🔥 Twój plan:</h3>";
 
   wybrane.forEach(x=>{
     app.innerHTML += `
       <div class="card">
-        <b>${x.name}</b><br>
+        <b>${x.name}</b><br><br>
         ${x.opis}
       </div>
     `;
@@ -219,18 +244,18 @@ function zapisz(){
   let zapisane = JSON.parse(localStorage.getItem("plany") || "[]");
   zapisane.push(wybrane);
   localStorage.setItem("plany", JSON.stringify(zapisane));
-  alert("Zapisano!");
+  alert("Zapisano plan 👍");
 }
 
-// POKAŻ ZAPISANE
+// ZAPISANE
 function pokazZapisane(){
   const app = document.getElementById("app");
   const zapisane = JSON.parse(localStorage.getItem("plany") || "[]");
 
-  app.innerHTML = "<h3>Zapisane plany:</h3>";
+  app.innerHTML = "<h3>📂 Zapisane plany:</h3>";
 
   zapisane.forEach((plan,i)=>{
-    app.innerHTML += `<div class="card"><b>Plan ${i+1}</b><br>`;
+    app.innerHTML += `<div class="card"><b>Plan ${i+1}</b><br><br>`;
     plan.forEach(p=>{
       app.innerHTML += `${p.name}<br>`;
     });
