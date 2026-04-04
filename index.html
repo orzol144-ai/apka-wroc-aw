@@ -7,36 +7,80 @@
 <style>
 body {
   margin: 0;
-  font-family: Arial;
+  font-family: Arial, sans-serif;
   background: linear-gradient(135deg, #667eea, #764ba2);
   display: flex;
   justify-content: center;
 }
 
 .box {
-  background: white;
+  background: rgba(255,255,255,0.95);
   margin-top: 40px;
   padding: 20px;
   border-radius: 20px;
   width: 90%;
   max-width: 400px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
 }
 
-button, select {
+h2 {
+  text-align: center;
+}
+
+select, button {
   width: 100%;
-  padding: 12px;
+  padding: 14px;
   margin-top: 10px;
-  border-radius: 10px;
+  border-radius: 12px;
   border: none;
+  font-size: 16px;
 }
 
 button {
-  background: #667eea;
+  background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:active {
+  transform: scale(0.97);
 }
 
 #wynik {
   margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* kafelki */
+.item {
+  background: #f7f7f7;
+  padding: 14px;
+  border-radius: 12px;
+  opacity: 0;
+  animation: fadeIn 0.4s ease forwards;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* animacja */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* loading */
+.loading {
+  text-align: center;
+  font-weight: bold;
+  color: #333;
 }
 </style>
 </head>
@@ -62,7 +106,7 @@ async function ulozDzien() {
   const styl = document.getElementById("styl").value;
   const wynik = document.getElementById("wynik");
 
-  wynik.innerText = "⏳ Generuję...";
+  wynik.innerHTML = '<div class="loading">⏳ Generuję plan...</div>';
 
   try {
     const res = await fetch("https://apka-wroc-aw-1.onrender.com/plan", {
@@ -77,12 +121,23 @@ async function ulozDzien() {
 
     console.log("ODPOWIEDŹ:", data);
 
-    // 🔥 NAJPROSTSZA WERSJA
-    wynik.innerText = data.wynik;
+    const linie = data.wynik.split('\n');
+    let html = '';
+
+    linie.forEach((linia, i) => {
+      linia = linia.trim();
+      if (linia === '') return;
+
+      html += `<div class="item" style="animation-delay:${i * 0.15}s">
+        ${linia}
+      </div>`;
+    });
+
+    wynik.innerHTML = html;
 
   } catch (err) {
     console.log("BŁĄD:", err);
-    wynik.innerText = "❌ Błąd połączenia";
+    wynik.innerHTML = "❌ Błąd połączenia";
   }
 }
 </script>
