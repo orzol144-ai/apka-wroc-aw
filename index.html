@@ -6,192 +6,270 @@
 
 <style>
 body {
-  margin: 0;
+  margin:0;
   font-family: Arial;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  min-height: 100vh;
+  background: linear-gradient(135deg,#1e1e2f,#3a2f63);
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  color:white;
 }
 
 .box {
-  background: rgba(255,255,255,0.95);
-  margin-top: 30px;
-  padding: 20px;
-  border-radius: 20px;
-  width: 90%;
-  max-width: 400px;
-  text-align: center;
+  width:95%;
+  max-width:420px;
+  background:#1f1f2e;
+  margin-top:20px;
+  border-radius:20px;
+  padding:20px;
+}
+
+select, button {
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border:none;
+  border-radius:10px;
 }
 
 button {
-  width: 100%;
-  padding: 14px;
-  border: none;
-  border-radius: 12px;
-  margin-top: 10px;
   background: linear-gradient(135deg,#667eea,#764ba2);
-  color: white;
-  font-weight: bold;
+  color:white;
+  font-weight:bold;
 }
 
-select {
-  width: 100%;
-  padding: 12px;
-  margin-top: 10px;
-  border-radius: 10px;
+.quick {
+  display:flex;
+  gap:10px;
 }
 
-#cards {
-  margin-top: 20px;
+.quick button {
+  flex:1;
 }
 
 .card {
-  background: #1e1e1e;
-  color: white;
-  padding: 15px;
-  border-radius: 15px;
-  margin-top: 15px;
-  text-align: left;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  background:#2a2a3a;
+  padding:15px;
+  border-radius:15px;
+  margin-top:15px;
+  transition:0.3s;
 }
 
 .card img {
-  width: 100%;
-  border-radius: 12px;
-  margin-bottom: 10px;
+  width:100%;
+  border-radius:12px;
+  margin-bottom:10px;
 }
 
-.card a {
-  color: #8ab4ff;
-  text-decoration: none;
+.actions {
+  display:flex;
+  gap:10px;
+}
+
+.actions button {
+  flex:1;
+}
+
+.map-btn {
+  background:#444;
+}
+
+.save-btn {
+  background:#28a745;
 }
 </style>
-
 </head>
+
 <body>
 
 <div class="box">
-  <h2>📍 Plan dnia</h2>
 
-  <select id="styl">
-    <option value="leniwy">😴 Leniwy</option>
-    <option value="aktywny">🏃 Aktywny</option>
-    <option value="romantyczny">❤️ Romantyczny</option>
-  </select>
+<h2>📍 Plan dnia</h2>
 
-  <select id="transport">
-    <option value="pieszo">🚶 Pieszo</option>
-    <option value="komunikacja">🚋 Komunikacja</option>
-    <option value="auto">🚗 Auto</option>
-  </select>
+<select id="styl">
+  <option value="leniwy">😴 Leniwy</option>
+  <option value="aktywny">🏃 Aktywny</option>
+  <option value="romantyczny">❤️ Romantyczny</option>
+</select>
 
-  <button onclick="start()">🚀 Start</button>
+<select id="transport">
+  <option value="pieszo">🚶 Pieszo</option>
+  <option value="komunikacja">🚋 Komunikacja</option>
+  <option value="auto">🚗 Auto</option>
+</select>
 
-  <div id="cards"></div>
+<button onclick="start()">🚀 Generuj plan</button>
+
+<div class="quick">
+  <button onclick="glodny()">🍔 Głodny</button>
+  <button onclick="zmeczony()">😴 Odpoczynek</button>
+</div>
+
+<button onclick="pokazZapisane()">📂 Zapisane</button>
+
+<div id="app"></div>
+
 </div>
 
 <script>
-let dane = {};
-let aktualnaKategoria = "kawa";
+let data = {};
+let sloty = ["kawa","jedzenie","spacer","atrakcja"];
+let currentSlot = 0;
 let index = 0;
+let wybrane = [];
 
-async function start() {
+let startX = 0;
+
+// 🔥 START
+async function start(){
   const styl = document.getElementById("styl").value;
   const transport = document.getElementById("transport").value;
 
-  document.getElementById("cards").innerHTML = "Ładowanie...";
-
-  const res = await fetch("/plan", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ styl, transport })
+  const res = await fetch("/plan",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({ styl, transport })
   });
 
-  dane = await res.json();
+  data = await res.json();
 
-  aktualnaKategoria = "kawa";
+  currentSlot = 0;
   index = 0;
+  wybrane = [];
 
   pokaz();
 }
 
-function pokaz() {
-  const kontener = document.getElementById("cards");
-  kontener.innerHTML = "";
+// 🍔 GŁODNY
+function glodny(){
+  currentSlot = 1;
+  index = 0;
+  pokaz();
+}
 
-  const lista = dane[aktualnaKategoria];
+// 😴 ODPOCZYNEK
+function zmeczony(){
+  currentSlot = 2;
+  index = 0;
+  pokaz();
+}
 
-  if (!lista || lista.length === 0) return;
+// 🔥 POKAZ KARTĘ
+function pokaz(){
+  const app = document.getElementById("app");
 
-  const item = lista[index];
+  if(currentSlot >= sloty.length){
+    podsumowanie();
+    return;
+  }
 
-  const img = `https://source.unsplash.com/600x400/?${encodeURIComponent(item.name + " Wrocław")}`;
+  const slot = sloty[currentSlot];
+  const item = data[slot][index];
 
-  const card = document.createElement("div");
-  card.className = "card";
+  // 🔥 STABILNE ZDJĘCIA
+  const img = `https://picsum.photos/400/250?random=${item.name.length + index}`;
 
-  card.innerHTML = `
-    <img src="${img}">
-    <h3>${item.name}</h3>
-    <p>${item.opis}</p>
-    <small>${item.dojazd}</small><br><br>
+  app.innerHTML = `
+    <h3>${slot.toUpperCase()}</h3>
 
-    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}" target="_blank">
-      📍 Otwórz w Mapach
-    </a>
+    <div class="card" id="card">
+      <img src="${img}">
+      <b>${item.name}</b><br><br>
+      ${item.opis}<br><br>
+      🚀 ${item.dojazd}
+    </div>
+
+    <button class="map-btn" onclick="mapa('${item.name}')">📍 Mapy</button>
+
+    <div class="actions">
+      <button onclick="next()">❌</button>
+      <button onclick="choose()">👍</button>
+    </div>
   `;
 
-  kontener.appendChild(card);
+  swipe();
 }
 
-// SWIPE
-let startX = 0;
+// 🔥 SWIPE
+function swipe(){
+  const card = document.getElementById("card");
 
-document.addEventListener("touchstart", e => {
-  startX = e.touches[0].clientX;
-});
+  card.addEventListener("touchstart",e=>{
+    startX = e.touches[0].clientX;
+  });
 
-document.addEventListener("touchend", e => {
-  let endX = e.changedTouches[0].clientX;
+  card.addEventListener("touchend",e=>{
+    let diff = e.changedTouches[0].clientX - startX;
 
-  if (endX < startX - 50) {
-    next();
-  }
+    if(diff > 60){
+      choose();
+    } else if(diff < -60){
+      next();
+    }
+  });
+}
 
-  if (endX > startX + 50) {
-    prev();
-  }
-});
-
-function next() {
-  const lista = dane[aktualnaKategoria];
-  if (!lista) return;
-
+// ❌ NEXT
+function next(){
   index++;
-
-  if (index >= lista.length) {
+  if(index >= data[sloty[currentSlot]].length){
     index = 0;
-
-    if (aktualnaKategoria === "kawa") aktualnaKategoria = "jedzenie";
-    else if (aktualnaKategoria === "jedzenie") aktualnaKategoria = "spacer";
-    else if (aktualnaKategoria === "spacer") aktualnaKategoria = "atrakcja";
-    else aktualnaKategoria = "kawa";
   }
-
   pokaz();
 }
 
-function prev() {
-  const lista = dane[aktualnaKategoria];
-  if (!lista) return;
-
-  index--;
-
-  if (index < 0) index = 0;
-
+// 👍 CHOOSE
+function choose(){
+  const slot = sloty[currentSlot];
+  wybrane.push(data[slot][index]);
+  currentSlot++;
+  index = 0;
   pokaz();
+}
+
+// 📍 MAPA
+function mapa(name){
+  window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`);
+}
+
+// 📦 PODSUMOWANIE
+function podsumowanie(){
+  const app = document.getElementById("app");
+
+  app.innerHTML = "<h3>🔥 Twój plan:</h3>";
+
+  wybrane.forEach(x=>{
+    app.innerHTML += `
+      <div class="card">
+        <b>${x.name}</b><br><br>
+        ${x.opis}
+      </div>
+    `;
+  });
+
+  app.innerHTML += `<button class="save-btn" onclick="zapisz()">💾 Zapisz</button>`;
+}
+
+// 💾 ZAPIS
+function zapisz(){
+  let p = JSON.parse(localStorage.getItem("plany")||"[]");
+  p.push(wybrane);
+  localStorage.setItem("plany",JSON.stringify(p));
+  alert("Zapisano 👍");
+}
+
+// 📂 ZAPISANE
+function pokazZapisane(){
+  const app = document.getElementById("app");
+  const p = JSON.parse(localStorage.getItem("plany")||"[]");
+
+  app.innerHTML = "<h3>📂 Zapisane:</h3>";
+
+  p.forEach((plan,i)=>{
+    app.innerHTML += `<div class="card"><b>Plan ${i+1}</b><br>`;
+    plan.forEach(x=> app.innerHTML += x.name+"<br>");
+    app.innerHTML += "</div>";
+  });
 }
 </script>
 
