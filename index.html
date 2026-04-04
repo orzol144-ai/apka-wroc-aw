@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Planer dnia</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .box {
+      background: white;
+      color: black;
+      padding: 25px;
+      border-radius: 15px;
+      max-width: 400px;
+      margin: auto;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    select, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 10px;
+      border: none;
+      font-size: 16px;
+    }
+
+    button {
+      background: #667eea;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #5a67d8;
+    }
+
+    #wynik {
+      margin-top: 20px;
+      text-align: left;
+      white-space: pre-line;
+    }
+
+    .loading {
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0% {opacity: 1;}
+      50% {opacity: 0.3;}
+      100% {opacity: 1;}
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+  <h2>Planer dnia – Wrocław 😎</h2>
+
+  <select id="styl">
+    <option value="leniwy">😴 Leniwy</option>
+    <option value="aktywny">🏃 Aktywny</option>
+    <option value="romantyczny">❤️ Romantyczny</option>
+  </select>
+
+  <button onclick="ulozDzien()">Ułóż mi dzień</button>
+
+  <div id="wynik"></div>
+</div>
+
+<script>
+async function ulozDzien() {
+  const styl = document.getElementById("styl").value;
+  const wynik = document.getElementById("wynik");
+
+  wynik.innerHTML = "<span class='loading'>⏳ Generuję plan...</span>";
+
+  try {
+    const res = await fetch("http://localhost:3000/plan", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ styl: styl })
+    });
+
+    const data = await res.json();
+
+    wynik.innerText = data.wynik;
+
+  } catch (err) {
+    wynik.innerText = "❌ Błąd połączenia";
+  }
+}
+</script>
+
+</body>
+</html>
