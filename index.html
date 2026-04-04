@@ -170,14 +170,25 @@ async function ulozDzien() {
 
     console.log("ODPOWIEDŹ:", data);
 
-    const linie = data.wynik.split('\n');
+const linie = data.wynik.split('\n');
 let html = '';
+let poprzedniaGodzina = '';
+let licznik = 0;
 
-linie.forEach((linia, index) => {
-  if (linia.trim() !== '') {
-    html += `<div class="item" style="animation-delay: ${index * 0.1}s">
+linie.forEach((linia) => {
+  linia = linia.trim();
+
+  if (linia === '') return;
+
+  if (linia.match(/^\d{1,2}:\d{2}/)) {
+    poprzedniaGodzina = linia;
+  } else {
+    html += `<div class="item" style="animation-delay: ${licznik * 0.15}s">
+      ⏰ ${poprzedniaGodzina}<br>
       📍 ${linia}
     </div>`;
+
+    licznik++;
   }
 });
 
