@@ -100,7 +100,7 @@ async function getFoodPlaces() {
   }
 }
 
-// 🔥 NOWY FLOW (ODPORNY – zawsze pełny plan)
+// 🔥 FLOW (zawsze pełny plan)
 function buildSmartFlow(places) {
   const food = places.filter(p => p.typ === "food");
   const coffee = places.filter(p => p.typ === "coffee");
@@ -124,7 +124,7 @@ function buildSmartFlow(places) {
   if (coffee[2]) result.push(coffee[2]);
   else if (food[1]) result.push(food[1]);
 
-  // 🔥 fallback – zawsze dobija do min 8 miejsc
+  // fallback
   let i = 0;
   while (result.length < 8 && i < places.length) {
     const p = places[i];
@@ -137,11 +137,25 @@ function buildSmartFlow(places) {
   return result.slice(0, 10);
 }
 
-// 🧠 AI
+// 🧠 AI (KONKRET – zero lania wody)
 async function enrichPlacesWithAIStyled(places, styl) {
   try {
     const prompt = `
-Opisz miejsca REALISTYCZNIE (1 zdanie).
+Opisz miejsca KONKRETNIE i PRAKTYCZNIE.
+
+ZASADY:
+- max 1 zdanie
+- bez metafor i poezji
+- napisz co tam jest / co robić / co zjeść
+
+PRZYKŁADY DOBRE:
+- "Pizzeria z piecem opalanym drewnem, popularna margherita i pizza z burratą."
+- "Historyczna część miasta z katedrą i brukowanymi uliczkami, dobre miejsce na spacer."
+- "Kawiarnia specialty znana z dobrej kawy i śniadań."
+
+PRZYKŁADY ZŁE:
+- "magiczne miejsce"
+- "dusza miasta"
 
 Styl: ${styl}
 
@@ -186,13 +200,17 @@ ${places.map(p => p.miejsce).join("\n")}
 
       return {
         ...p,
-        opis: found?.opis || "Miejsce warte odwiedzenia.",
+        opis: found?.opis || "Popularne miejsce, warto sprawdzić na miejscu.",
         opinie: found?.opinie || Math.floor(Math.random()*2000+200)
       };
     });
 
   } catch {
-    return places;
+    return places.map(p => ({
+      ...p,
+      opis: "Popularne miejsce, warto sprawdzić na miejscu.",
+      opinie: Math.floor(Math.random()*2000+200)
+    }));
   }
 }
 
@@ -208,7 +226,7 @@ app.post("/plan", async (req, res) => {
 
     let allPlaces = [
       ...attractions,
-      ...attractions, // boost atrakcji
+      ...attractions,
       ...food
     ];
 
