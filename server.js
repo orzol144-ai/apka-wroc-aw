@@ -24,7 +24,7 @@ async function getWeather() {
   }
 }
 
-// 🚀 PLAN DNIA
+// 🚀 PLAN
 app.post("/plan", async (req, res) => {
   try {
     const { styl } = req.body;
@@ -34,21 +34,28 @@ app.post("/plan", async (req, res) => {
     const prompt = `
 Jesteś lokalnym przewodnikiem po Wrocławiu.
 
-Tworzysz UNIKALNY plan dnia (6-7 punktów).
+Tworzysz REALNY plan dnia.
 
 STYL: ${styl}
 
-WAŻNE:
-- mieszaj znane i mniej znane miejsca
-- unikaj powtarzalnych punktów
-- zero rzeczy typu urząd, informacja turystyczna
+ZASADY:
+- tylko realne miejsca
+- zero urzędów, informacji turystycznych itd
+- plan ma być ciekawy i logiczny
+- unikaj powtarzalnych miejsc
+
+TRASA:
+- podawaj konkret:
+  - "8 min pieszo Mostem Tumskim"
+  - "tramwaj 2 (Rynek → Plac Grunwaldzki)"
+
+NIE PODAWAJ GODZIN OTWARCIA JEŚLI NIE JESTEŚ PEWNY
 
 KAŻDY PUNKT:
-- nazwa
-- ciekawostka / historia
-- czas dojścia
+- miejsce
+- opis (ciekawostka / historia)
+- dojście
 - czas pobytu
-- godziny otwarcia
 - współrzędne (lat, lon)
 
 FORMAT JSON:
@@ -56,9 +63,8 @@ FORMAT JSON:
   {
     "miejsce": "nazwa",
     "opis": "opis",
-    "czas": "10 min pieszo",
+    "dojscie": "8 min pieszo",
     "czas_pobytu": "45 min",
-    "godziny": "10:00–22:00",
     "lat": 51.1,
     "lon": 17.0
   }

@@ -83,6 +83,16 @@ function clearMap() {
   if (line) map.removeLayer(line);
 }
 
+// 🔥 OSRM – realna trasa
+async function getRoute(coords) {
+  const url = `https://router.project-osrm.org/route/v1/foot/${coords.map(c => c[1]+","+c[0]).join(";")}?overview=full&geometries=geojson`;
+
+  const res = await fetch(url);
+  const data = await res.json();
+
+  return data.routes?.[0]?.geometry?.coordinates.map(c => [c[1], c[0]]);
+}
+
 async function start() {
   document.getElementById("app").innerHTML = "⏳ Tworzę...";
 
@@ -110,26 +120,31 @@ async function start() {
       <div class="card">
         <h4>${hour}:00 — ${item.miejsce}</h4>
         <p>${item.opis}</p>
-        <p>🚶 ${item.czas}</p>
+        <p>🚶 ${item.dojscie}</p>
         <p>⏱️ ${item.czas_pobytu}</p>
-        <p>🕒 ${item.godziny}</p>
       </div>
     `;
 
     if (item.lat && item.lon) {
+      coords.push([item.lat, item.lon]);
+
       const marker = L.marker([item.lat, item.lon]).addTo(map)
         .bindPopup(item.miejsce);
+
       markers.push(marker);
-      coords.push([item.lat, item.lon]);
     }
 
     hour += 2;
   });
 
-  // 🔥 LINIA TRASY
+  // 🔥 REALNA TRASA
   if (coords.length > 1) {
-    line = L.polyline(coords).addTo(map);
-    map.fitBounds(line.getBounds());
+    const route = await getRoute(coords);
+
+    if (route) {
+      line = L.polyline(route, { color: "cyan" }).addTo(map);
+      map.fitBounds(line.getBounds());
+    }
   }
 
   document.getElementById("app").innerHTML = html;
