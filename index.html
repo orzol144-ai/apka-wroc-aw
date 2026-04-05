@@ -1,95 +1,9 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-<meta charset="UTF-8">
-<title>Plan dnia</title>
-
-<style>
-body {
-  margin:0;
-  font-family: Arial;
-  background: linear-gradient(135deg,#1e1e2f,#3b3b6d);
-  color:white;
-  display:flex;
-  justify-content:center;
-  padding:20px;
-}
-
-.box {
-  background:#2a2a3d;
-  padding:20px;
-  border-radius:20px;
-  width:100%;
-  max-width:400px;
-  text-align:center;
-}
-
-button, select {
-  width:100%;
-  margin-top:10px;
-  padding:12px;
-  border-radius:12px;
-  border:none;
-  font-size:16px;
-}
-
-.card {
-  margin-top:20px;
-  background:#1f1f2e;
-  padding:15px;
-  border-radius:15px;
-  text-align:left;
-}
-
-.actions {
-  display:flex;
-  gap:10px;
-  margin-top:15px;
-}
-
-.actions button {
-  flex:1;
-  font-size:18px;
-}
-
-.map-link {
-  display:block;
-  margin-top:10px;
-  color:#4da6ff;
-  text-decoration:none;
-}
-
-.weather {
-  margin-top:10px;
-  font-size:14px;
-  opacity:0.8;
-}
-</style>
-</head>
-
-<body>
-
-<div class="box">
-
-<h2>📍 Plan dnia</h2>
-
-<select id="styl">
-  <option value="leniwy">😴 Leniwy</option>
-  <option value="aktywny">🏃 Aktywny</option>
-  <option value="romantyczny">❤️ Romantyczny</option>
-</select>
-
-<button onclick="start()">🚀 Start</button>
-
-<div id="app"></div>
-
-</div>
-
 <script>
 
 let list = [];
 let index = 0;
 let finalPlan = [];
+let weatherData = null;
 
 async function start() {
   try {
@@ -113,21 +27,13 @@ async function start() {
     list = data.list;
     index = 0;
     finalPlan = [];
-
-    // 🌦️ pogoda
-    const weatherHtml = `
-      <div class="weather">
-        🌦️ ${data.weather?.temp ?? "?"}°C
-      </div>
-    `;
-
-    document.getElementById("app").innerHTML = weatherHtml;
+    weatherData = data.weather;
 
     render();
 
   } catch (err) {
     console.error(err);
-    document.getElementById("app").innerHTML = "❌ Błąd połączenia";
+    document.getElementById("app").innerHTML = "❌ Błąd";
   }
 }
 
@@ -142,7 +48,11 @@ function render() {
 
   const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.miejsce)}`;
 
-  app.innerHTML += `
+  app.innerHTML = `
+    <div class="weather">
+      🌦️ ${weatherData?.temp ?? "?"}°C
+    </div>
+
     <div class="card">
       <h3>${item.miejsce}</h3>
       <p>${item.opis}</p>
@@ -171,7 +81,13 @@ function reject() {
 }
 
 function showFinal() {
-  let html = "<h3>🔥 Twój plan dnia</h3>";
+  let html = `
+    <div class="weather">
+      🌦️ ${weatherData?.temp ?? "?"}°C
+    </div>
+
+    <h3>🔥 Twój plan dnia</h3>
+  `;
 
   let hour = 10;
 
@@ -199,6 +115,3 @@ function showFinal() {
 }
 
 </script>
-
-</body>
-</html>
