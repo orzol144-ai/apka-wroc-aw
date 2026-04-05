@@ -7,11 +7,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// 🔥 FRONT
 app.get("/", (req, res) => {
   res.sendFile(path.resolve("index.html"));
 });
 
-// 🌦️ pogoda
+// 🌦️ POGODA
 async function getWeather() {
   try {
     const res = await fetch(
@@ -24,37 +25,50 @@ async function getWeather() {
   }
 }
 
-// 🚀 PLAN
+// 🧠 PLAN DNIA
 app.post("/plan", async (req, res) => {
   try {
     const { styl } = req.body;
 
     const weather = await getWeather();
+    const temp = weather.temp;
 
     const prompt = `
 Jesteś lokalnym przewodnikiem po Wrocławiu.
 
-Tworzysz REALNY plan dnia.
+Tworzysz REALNY, PRZEMYŚLANY plan dnia.
 
 STYL: ${styl}
+TEMPERATURA: ${temp}°C
 
 ZASADY:
-- tylko realne miejsca
-- zero urzędów, informacji turystycznych itd
-- plan ma być ciekawy i logiczny
-- unikaj powtarzalnych miejsc
+- plan ma być logiczny jak od człowieka
+- NIE powtarzaj popularnych miejsc
+- mieszaj znane i mniej znane miejsca
+- unikaj urzędów, informacji turystycznych itd
 
-TRASA:
-- podawaj konkret:
-  - "8 min pieszo Mostem Tumskim"
-  - "tramwaj 2 (Rynek → Plac Grunwaldzki)"
+POGODA:
+- jeśli zimno (<15°C) → więcej indoor
+- jeśli ciepło → spacery OK
 
-NIE PODAWAJ GODZIN OTWARCIA JEŚLI NIE JESTEŚ PEWNY
+WIECZÓR:
+- po 20:00:
+  - NIE dawaj parków jeśli zimno
+  - dawaj bary, knajpy, miejsca indoor
+- jeśli zimno → możesz zakończyć plan o 20:00
+
+FLOW:
+10:00 kawa
+12:00 atrakcja
+14:00 jedzenie
+16:00 atrakcja
+18:00 kolacja
+20:00 zakończenie (bar / klimat / indoor)
 
 KAŻDY PUNKT:
-- miejsce
-- opis (ciekawostka / historia)
-- dojście
+- konkret co robić (np co zjeść)
+- ciekawostka lub klimat miejsca
+- konkretne dojście (np "8 min pieszo Mostem Tumskim")
 - czas pobytu
 - współrzędne (lat, lon)
 
@@ -62,7 +76,7 @@ FORMAT JSON:
 [
   {
     "miejsce": "nazwa",
-    "opis": "opis",
+    "opis": "konkret + ciekawostka",
     "dojscie": "8 min pieszo",
     "czas_pobytu": "45 min",
     "lat": 51.1,
@@ -90,15 +104,32 @@ FORMAT JSON:
 
     try {
       plan = JSON.parse(text);
-    } catch {}
+    } catch (e) {
+      console.error("JSON parse error:", e);
+    }
+
+    // 🔥 fallback (żeby nigdy nie było pustki)
+    if (!Array.isArray(plan) || plan.length === 0) {
+      plan = [
+        {
+          miejsce: "Rynek Wrocław",
+          opis: "Centralny punkt miasta z klimatycznymi kamienicami i restauracjami.",
+          dojscie: "start",
+          czas_pobytu: "45 min",
+          lat: 51.109,
+          lon: 17.032
+        }
+      ];
+    }
 
     res.json({ list: plan, weather });
 
   } catch (err) {
-    console.error(err);
+    console.error("SERVER ERROR:", err);
     res.status(500).json({ error: "error" });
   }
 });
 
+// 🚀 START
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Server działa:", PORT));
+app.listen(PORT, () => console.log("Server działa na porcie:", PORT));
