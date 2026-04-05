@@ -25,11 +25,9 @@ body {
 .header {
   position:sticky;
   top:0;
-  background:rgba(15,23,42,0.8);
-  backdrop-filter:blur(10px);
+  background:rgba(15,23,42,0.9);
   padding:10px;
   border-radius:15px;
-  z-index:10;
 }
 
 select, button {
@@ -52,8 +50,6 @@ button {
   padding:15px;
   border-radius:18px;
   background:rgba(255,255,255,0.05);
-  backdrop-filter:blur(10px);
-  box-shadow:0 10px 30px rgba(0,0,0,0.3);
 }
 
 .title {
@@ -119,70 +115,94 @@ function clearMap() {
   if (line) map.removeLayer(line);
 }
 
-// 🔥 OSRM
+// 🔥 NAPRAWIONE (bez backticków)
 async function getRoute(coords) {
-  const url = \`https://router.project-osrm.org/route/v1/foot/\${coords.map(c => c[1]+","+c[0]).join(";")}?overview=full&geometries=geojson\`;
+  const coordsStr = coords.map(function(c) {
+    return c[1] + "," + c[0];
+  }).join(";");
+
+  const url = "https://router.project-osrm.org/route/v1/foot/" +
+              coordsStr +
+              "?overview=full&geometries=geojson";
+
   const res = await fetch(url);
   const data = await res.json();
-  return data.routes?.[0]?.geometry?.coordinates.map(c => [c[1], c[0]]);
+
+  if (!data.routes || !data.routes[0]) return null;
+
+  return data.routes[0].geometry.coordinates.map(function(c) {
+    return [c[1], c[0]];
+  });
 }
 
+// 🔥 START
 async function start() {
+  console.log("START CLICKED");
+
   document.getElementById("app").innerHTML = "⏳ Tworzę plan...";
 
-  const styl = document.getElementById("styl").value;
+  try {
+    const styl = document.getElementById("styl").value;
 
-  const res = await fetch("/plan", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ styl })
-  });
+    const res = await fetch("/plan", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ styl })
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  initMap();
-  clearMap();
-
-  let html = "";
-
-  let hour = 10;
-  let coords = [];
-
-  data.list.forEach((item, i) => {
-
-    html += \`
-      <div class="card">
-        <div class="title">\${i+1}. \${hour}:00 — \${item.miejsce}</div>
-        <div class="meta">\${item.opis}</div>
-
-        <div class="meta">🚶 \${item.dojscie}</div>
-        <div class="meta">⏱️ \${item.czas_pobytu}</div>
-      </div>
-    \`;
-
-    if (item.lat && item.lon) {
-      coords.push([item.lat, item.lon]);
-
-      const marker = L.marker([item.lat, item.lon])
-        .addTo(map)
-        .bindPopup(\`\${i+1}. \${item.miejsce}\`);
-
-      markers.push(marker);
+    if (!data || !data.list) {
+      document.getElementById("app").innerHTML = "❌ Błąd danych";
+      return;
     }
 
-    hour += 2;
-  });
+    initMap();
+    clearMap();
 
-  if (coords.length > 1) {
-    const route = await getRoute(coords);
+    let html = "";
+    let hour = 10;
+    let coords = [];
 
-    if (route) {
-      line = L.polyline(route, { color:"#38bdf8", weight:5 }).addTo(map);
-      map.fitBounds(line.getBounds());
+    data.list.forEach(function(item, i) {
+
+      html +=
+        '<div class="card">' +
+          '<div class="title">' + (i+1) + '. ' + hour + ':00 — ' + item.miejsce + '</div>' +
+          '<div class="meta">' + (item.opis || "") + '</div>' +
+          '<div class="meta">🚶 ' + (item.dojscie || "") + '</div>' +
+          '<div class="meta">⏱️ ' + (item.czas_pobytu || "") + '</div>' +
+        '</div>';
+
+      if (item.lat && item.lon) {
+        coords.push([item.lat, item.lon]);
+
+        const marker = L.marker([item.lat, item.lon])
+          .addTo(map)
+          .bindPopup((i+1) + ". " + item.miejsce);
+
+        markers.push(marker);
+      }
+
+      hour += 2;
+    });
+
+    // 🔥 TRASA
+    if (coords.length > 1) {
+      const route = await getRoute(coords);
+
+      if (route) {
+        line = L.polyline(route, { color:"#38bdf8", weight:5 }).addTo(map);
+        map.fitBounds(line.getBounds());
+      }
     }
+
+    document.getElementById("app").innerHTML = html;
+
+  } catch (e) {
+    console.error(e);
+    document.getElementById("app").innerHTML = "❌ Błąd aplikacji";
   }
-
-  document.getElementById("app").innerHTML = html;
 }
 
 </script>
