@@ -20,6 +20,8 @@ async function start() {
 
     const data = await res.json();
 
+    console.log("DATA:", data); // 🔥 debug
+
     if (!data.list || !data.list.length) {
       document.getElementById("app").innerHTML = "❌ Brak planu";
       return;
@@ -28,15 +30,104 @@ async function start() {
     list = data.list;
     index = 0;
     finalPlan = [];
-    weatherData = data.weather;
+    weatherData = data.weather || {};
 
     render();
 
   } catch (err) {
-    console.error(err);
-    document.getElementById("app").innerHTML = "❌ Błąd połączenia";
+    console.error("FRONT ERROR:", err);
+    document.getElementById("app").innerHTML = "❌ Błąd aplikacji";
   }
 }
+
+function render() {
+  try {
+    const app = document.getElementById("app");
+
+    if (!list.length) {
+      app.innerHTML = "❌ Brak danych";
+      return;
+    }
+
+    if (index >= list.length) {
+      return showFinal();
+    }
+
+    const item = list[index];
+
+    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.miejsce || "")}`;
+
+    app.innerHTML = `
+      <div style="margin-bottom:10px;font-size:14px;">
+        🌦️ ${weatherData?.temp ?? "?"}°C
+      </div>
+
+      <div class="card">
+        <h3>${item.miejsce || "Brak nazwy"}</h3>
+        <p>${item.opis || ""}</p>
+
+        <a href="${mapUrl}" target="_blank">
+          📍 Otwórz mapę
+        </a>
+
+        <div class="actions">
+          <button onclick="reject()">👎</button>
+          <button onclick="accept()">👍</button>
+        </div>
+      </div>
+    `;
+  } catch (e) {
+    console.error("RENDER ERROR:", e);
+  }
+}
+
+function accept() {
+  finalPlan.push(list[index]);
+  index++;
+  render();
+}
+
+function reject() {
+  index++;
+  render();
+}
+
+function showFinal() {
+  try {
+    let html = `
+      <h3>🔥 Twój plan dnia</h3>
+    `;
+
+    let hour = 10;
+
+    finalPlan.forEach(item => {
+      const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.miejsce || "")}`;
+
+      html += `
+        <div class="card">
+          <h4>${hour}:00 — ${item.miejsce}</h4>
+          <p>${item.opis}</p>
+          <a href="${mapUrl}" target="_blank">
+            📍 Otwórz mapę
+          </a>
+        </div>
+      `;
+
+      hour += 2;
+    });
+
+    if (!finalPlan.length) {
+      html += "<p>❌ Nic nie wybrałeś</p>";
+    }
+
+    document.getElementById("app").innerHTML = html;
+
+  } catch (e) {
+    console.error("FINAL ERROR:", e);
+  }
+}
+
+</script>
 
 function render() {
   const app = document.getElementById("app");
