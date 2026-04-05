@@ -1,18 +1,23 @@
-const express = require("express");
-const cors = require("cors");
-const path = require("path");
+import express from "express";
+import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
+
+// 🔥 fix __dirname w ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 app.use(cors());
 app.use(express.json());
 
-// 🔥 ROOT (NA SZTYWNO – ZERO PROBLEMÓW)
+// 🔥 ROOT (działa na Render)
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// 🔥 TEST ROUTE (ważne!)
+// 🔥 TEST
 app.get("/test", (req, res) => {
   res.send("OK");
 });
@@ -84,7 +89,8 @@ STYL: ${styl}
 POGODA: ${weather.temp}°C
 
 10 miejsc. Mix atrakcji, jedzenia, kawiarni.
-Format:
+
+FORMAT:
 10:00 – NAZWA
 Opis
 Dojście: ...
