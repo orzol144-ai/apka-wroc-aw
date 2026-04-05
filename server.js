@@ -11,7 +11,6 @@ app.get("/", (req, res) => {
   res.sendFile(path.resolve("index.html"));
 });
 
-// 🔥 AI helper
 async function askAI(prompt) {
   const res = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
@@ -29,46 +28,46 @@ async function askAI(prompt) {
   return data.output[0].content[0].text;
 }
 
-// 🔥 PLAN DNIA (NOWY SYSTEM JSON)
+// 🔥 NOWY LEPSZY PLAN
 app.post("/plan", async (req, res) => {
-  const { styl, transport } = req.body;
+  const { styl } = req.body;
 
   const prompt = `
 Stwórz plan dnia we Wrocławiu.
 
-Zwróć TYLKO JSON (bez tekstu poza JSON)
+Zwróć TYLKO JSON:
 
-FORMAT:
 [
   {
     "godzina": "10:00",
     "miejsce": "Nazwa miejsca",
-    "opis": "ciekawy opis + ciekawostka",
-    "dojscie": "jak dojść z poprzedniego miejsca (czas + środek transportu)"
+    "opis": "Opis + ciekawostka historyczna + klimat miejsca",
+    "dojscie": "jak dojść z poprzedniego miejsca (czas + ewentualnie tramwaj/autobus)"
   }
 ]
 
 ZASADY:
-- max 6 punktów
+- 6–8 punktów (pełny dzień)
 - realna trasa (blisko siebie)
-- NIE powtarzaj typów miejsc
-- styl: ${styl}
-- transport: ${transport}
+- różnorodność (kawa → spacer → atrakcja → jedzenie → coś ciekawego)
+- NIE powtarzaj tego samego typu miejsca pod rząd
 
 WAŻNE:
-- każdy kolejny punkt musi zawierać DOJŚCIE od poprzedniego
-- np: "10 min pieszo" albo "tramwaj 9 → przystanek X"
+- dodawaj ciekawostki (rok powstania, historia, coś unikalnego)
+- styl luźny, ale konkretny (jak znajomy poleca)
+
+Styl: ${styl}
 `;
 
   try {
     const raw = await askAI(prompt);
-
     const parsed = JSON.parse(raw);
 
     res.json({ plan: parsed });
+
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "AI error" });
+    res.status(500).json({ error: "Błąd AI" });
   }
 });
 

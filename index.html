@@ -72,11 +72,6 @@ button {
   <option value="romantyczny">❤️ Romantyczny</option>
 </select>
 
-<select id="transport">
-  <option value="pieszo">🚶 Pieszo</option>
-  <option value="auto">🚗 Auto</option>
-</select>
-
 <button onclick="start()">🚀 Start</button>
 
 <div id="app"></div>
@@ -90,7 +85,6 @@ let currentIndex = 0;
 
 async function start() {
   const styl = document.getElementById("styl").value;
-  const transport = document.getElementById("transport").value;
 
   document.getElementById("app").innerHTML = "⏳ Generuję plan...";
 
@@ -100,26 +94,18 @@ async function start() {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ styl, transport })
+      body: JSON.stringify({ styl })
     });
 
     const data = await res.json();
 
-    console.log(data);
-
-    if (!data.plan) {
-      document.getElementById("app").innerHTML = "❌ Brak danych";
-      return;
-    }
-
-    plan = data.plan;
+    plan = data.plan || [];
     currentIndex = 0;
 
     render();
 
   } catch (e) {
-    console.error(e);
-    document.getElementById("app").innerHTML = "❌ Błąd serwera";
+    document.getElementById("app").innerHTML = "❌ Błąd";
   }
 }
 
@@ -166,7 +152,7 @@ function remove() {
   plan.splice(currentIndex, 1);
 
   if (currentIndex >= plan.length) {
-    currentIndex = plan.length - 1;
+    currentIndex = Math.max(0, plan.length - 1);
   }
 
   render();
