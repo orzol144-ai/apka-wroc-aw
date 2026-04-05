@@ -50,6 +50,11 @@ button, select {
 .actions button {
   flex:1;
 }
+
+.disabled {
+  opacity:0.4;
+  pointer-events:none;
+}
 </style>
 </head>
 
@@ -85,12 +90,16 @@ let weatherData = null;
 let map;
 let markers = [];
 
-function initMap() {
-  map = L.map('map').setView([51.11, 17.03], 13);
+const MAX_ITEMS = 7;
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap'
-  }).addTo(map);
+function initMap() {
+  if (!map) {
+    map = L.map('map').setView([51.11, 17.03], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+  }
 }
 
 function clearMarkers() {
@@ -121,7 +130,8 @@ async function start() {
 
     const data = await res.json();
 
-    if (!data.list || !data.list.length) {
+    // 🔥 HARD FIX – zawsze lista
+    if (!data || !Array.isArray(data.list) || data.list.length === 0) {
       document.getElementById("app").innerHTML = "❌ Brak planu";
       return;
     }
@@ -136,7 +146,8 @@ async function start() {
 
     render();
 
-  } catch {
+  } catch (e) {
+    console.error(e);
     document.getElementById("app").innerHTML = "❌ Błąd";
   }
 }
@@ -148,14 +159,21 @@ function render() {
 
   const item = list[index];
 
+  if (!item || !item.miejsce) {
+    index++;
+    return render();
+  }
+
   const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.miejsce)}`;
+
+  const isFull = finalPlan.length >= MAX_ITEMS;
 
   app.innerHTML = `
     <div>🌦️ ${weatherData?.temp ?? "?"}°C</div>
 
     <div class="card">
       <h3>${item.miejsce}</h3>
-      <p>${item.opis}</p>
+      <p>${item.opis || ""}</p>
 
       <p>⭐ ${item.rating || "4.5"} (${item.opinie || "???"} opinii)</p>
 
@@ -163,15 +181,18 @@ function render() {
 
       <div class="actions">
         <button onclick="reject()">👎</button>
-        <button onclick="accept()">👍</button>
+        <button class="${isFull ? 'disabled' : ''}" onclick="accept()">👍</button>
       </div>
     </div>
   `;
 }
 
-// 🔥 LIMIT ACCEPT
 function accept() {
-  if (finalPlan.length >= 7) return;
+  if (finalPlan.length >= MAX_ITEMS) {
+    index++;
+    render();
+    return;
+  }
 
   addMarker(list[index]);
   finalPlan.push(list[index]);
@@ -184,30 +205,25 @@ function reject() {
   render();
 }
 
-// 🔥 FINAL (bez duplikatów + dobre godziny)
 function showFinal() {
   try {
     let html = "<h3>🔥 Twój plan dnia</h3>";
 
-    // usuń duplikaty
-    const uniquePlan = [];
-    finalPlan.forEach(item => {
-      if (!uniquePlan.find(x => x.miejsce === item.miejsce)) {
-        uniquePlan.push(item);
+    const unique = [];
+    finalPlan.forEach(p => {
+      if (!unique.find(x => x.miejsce === p.miejsce)) {
+        unique.push(p);
       }
     });
 
-    // limit
-    const safePlan = uniquePlan.slice(0, 7);
-
     let hour = 10;
 
-    safePlan.forEach(item => {
+    unique.forEach(item => {
       const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.miejsce || "")}`;
 
       html += `
         <div class="card">
-          <h4>${hour}:00 — ${item.miejsce || "Brak"}</h4>
+          <h4>${hour}:00 — ${item.miejsce}</h4>
           <p>${item.opis || ""}</p>
           <p>⭐ ${item.rating || "4.5"} (${item.opinie || "???"} opinii)</p>
           <a href="${mapUrl}" target="_blank">📍 Google Maps</a>
@@ -215,13 +231,8 @@ function showFinal() {
       `;
 
       hour += 2;
-
       if (hour > 22) return;
     });
-
-    if (!safePlan.length) {
-      html += "<p>❌ Nic nie wybrałeś</p>";
-    }
 
     document.getElementById("app").innerHTML = html;
 
