@@ -99,19 +99,13 @@ function clearMarkers() {
   markers = [];
 }
 
-async function addMarker(place) {
-  try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(place + " Wrocław")}`);
-    const data = await res.json();
+function addMarker(item) {
+  if (!item.lat || !item.lon) return;
 
-    if (!data[0]) return;
+  const marker = L.marker([item.lat, item.lon]).addTo(map)
+    .bindPopup(item.miejsce);
 
-    const marker = L.marker([data[0].lat, data[0].lon]).addTo(map)
-      .bindPopup(place);
-
-    markers.push(marker);
-
-  } catch {}
+  markers.push(marker);
 }
 
 // START
@@ -166,6 +160,8 @@ function render() {
       <h3>${item.miejsce}</h3>
       <p>${item.opis}</p>
 
+      <p>⭐ ${item.rating}</p>
+
       <a href="${mapUrl}" target="_blank">📍 Google Maps</a>
 
       <div class="actions">
@@ -178,7 +174,7 @@ function render() {
 
 // AKCJE
 function accept() {
-  addMarker(list[index].miejsce);
+  addMarker(list[index]);
   finalPlan.push(list[index]);
   index++;
   render();
@@ -202,6 +198,7 @@ function showFinal() {
       <div class="card">
         <h4>${hour}:00 — ${item.miejsce}</h4>
         <p>${item.opis}</p>
+        <p>⭐ ${item.rating}</p>
         <a href="${mapUrl}" target="_blank">📍 Google Maps</a>
       </div>
     `;

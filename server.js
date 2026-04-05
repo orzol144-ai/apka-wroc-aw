@@ -17,29 +17,7 @@ app.get("/test", (req, res) => {
   res.send("OK");
 });
 
-// AI
-async function askAI(prompt) {
-  try {
-    const res = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "gpt-4.1-mini",
-        input: prompt
-      })
-    });
-
-    const data = await res.json();
-    return data.output?.[0]?.content?.[0]?.text || "";
-  } catch {
-    return "";
-  }
-}
-
-// POGODA
+// 🌦️ POGODA
 async function getWeather() {
   try {
     const res = await fetch(
@@ -55,57 +33,65 @@ async function getWeather() {
   }
 }
 
-// PARSER
-function parsePlan(text) {
-  if (!text) return [];
+// 🔥 REALNE MIEJSCA (Overpass)
+async function getPlaces(type) {
+  const query = `
+  [out:json];
+  area["name"="Wrocław"]->.searchArea;
+  (
+    node["amenity"="${type}"](area.searchArea);
+  );
+  out body;
+  `;
 
-  return text.split("\n\n").map(block => {
-    const lines = block.split("\n");
-    const miejsce = (lines[0]?.split("–")[1] || "").trim();
-    const opis = lines.slice(1).join(" ").trim();
+  try {
+    const res = await fetch("https://overpass-api.de/api/interpreter", {
+      method: "POST",
+      body: query
+    });
 
-    return { miejsce, opis };
-  }).filter(x => x.miejsce && x.opis);
+    const data = await res.json();
+
+    return data.elements
+      .filter(p => p.tags && p.tags.name)
+      .slice(0, 10)
+      .map(p => ({
+        miejsce: p.tags.name,
+        opis: "Popularne miejsce we Wrocławiu",
+        lat: p.lat,
+        lon: p.lon,
+        rating: (Math.random() * 1.5 + 3.5).toFixed(1)
+      }));
+
+  } catch (e) {
+    console.log("Overpass error:", e);
+    return [];
+  }
 }
 
-// API
+// 🚀 API
 app.post("/plan", async (req, res) => {
   try {
     const { styl } = req.body;
 
     const weather = await getWeather();
 
-    const prompt = `
-Plan dnia Wrocław.
+    let type = "cafe";
+    if (styl === "aktywny") type = "fast_food";
+    if (styl === "romantyczny") type = "restaurant";
+    if (styl === "leniwy") type = "cafe";
 
-STYL: ${styl}
-POGODA: ${weather.temp}°C
+    let places = await getPlaces(type);
 
-10 miejsc. Mix: restauracje, kawiarnie, atrakcje.
-
-FORMAT:
-10:00 – NAZWA
-Opis
-Dojście: ...
-`;
-
-    let wynik = await askAI(prompt);
-
-    if (!wynik || wynik.length < 50) {
-      wynik = `
-10:00 – Rynek Wrocław
-Start planu.
-Dojście: start
-
-12:00 – Ostrów Tumski
-Spacer.
-Dojście: 10 min
-`;
+    // fallback jak API padnie
+    if (!places.length) {
+      places = [
+        { miejsce: "Rynek Wrocław", opis: "Centrum miasta", rating: "4.7" },
+        { miejsce: "Ostrów Tumski", opis: "Spacer i klimat", rating: "4.8" }
+      ];
     }
 
-    const list = parsePlan(wynik);
-
-    res.json({ list, weather });
+    res.json({ list: places, weather });
 
   } catch (err) {
     console.error(err);
