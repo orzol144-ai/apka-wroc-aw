@@ -25,9 +25,10 @@ body {
 .header {
   position:sticky;
   top:0;
-  background:rgba(15,23,42,0.9);
+  background:rgba(15,23,42,0.95);
   padding:10px;
   border-radius:15px;
+  z-index:1000;
 }
 
 select, button {
@@ -63,10 +64,14 @@ button {
   opacity:0.8;
 }
 
+/* 🔥 FIX MAPY */
 #map {
   height:250px;
   margin-top:15px;
   border-radius:15px;
+  overflow:hidden;
+  position:relative;
+  z-index:0;
 }
 </style>
 </head>
@@ -115,7 +120,6 @@ function clearMap() {
   if (line) map.removeLayer(line);
 }
 
-// 🔥 NAPRAWIONE (bez backticków)
 async function getRoute(coords) {
   const coordsStr = coords.map(function(c) {
     return c[1] + "," + c[0];
@@ -135,10 +139,7 @@ async function getRoute(coords) {
   });
 }
 
-// 🔥 START
 async function start() {
-  console.log("START CLICKED");
-
   document.getElementById("app").innerHTML = "⏳ Tworzę plan...";
 
   try {
@@ -187,7 +188,6 @@ async function start() {
       hour += 2;
     });
 
-    // 🔥 TRASA
     if (coords.length > 1) {
       const route = await getRoute(coords);
 
@@ -198,6 +198,11 @@ async function start() {
     }
 
     document.getElementById("app").innerHTML = html;
+
+    // 🔥 KLUCZOWY FIX
+    setTimeout(function() {
+      map.invalidateSize();
+    }, 200);
 
   } catch (e) {
     console.error(e);
