@@ -33,45 +33,48 @@ async function askAI(prompt) {
 app.post("/plan", async (req, res) => {
   const { styl, transport } = req.body;
 
-  const prompt = `
-Stwórz REALNY plan dnia we Wrocławiu.
+const prompt = `
+Stwórz REALNY plan całego dnia we Wrocławiu.
 
 WARUNKI:
 - styl: ${styl}
 - transport: ${transport}
-- pogoda: chłodno (~10°C)
+- dzień od 10:00 do ok. 20:00
 
 ZASADY:
-- miejsca muszą być BLISKO siebie (logiczna trasa)
-- NIE skacz po mieście
-- maks 10-20 min między punktami
-- jeśli dalej → podaj tramwaj/autobus (nr + gdzie wysiąść)
-- jeśli blisko → podaj czas pieszo
+- plan musi mieć MINIMUM 8 punktów
+- zachowaj LOGIKĘ dnia:
+  kawa → atrakcje → jedzenie → atrakcje → chill → kolacja
 
-FORMAT (BARDZO WAŻNE):
-Każdy punkt dokładnie tak:
+- NIE powtarzaj typów miejsc pod rząd (np. 2x kawiarnia)
+- miejsca muszą być BLISKO siebie (max 15–20 min)
+- NIE skacz po całym mieście
 
+SPORT:
+- jeśli styl = aktywny → dodaj coś typu:
+  - ścianka wspinaczkowa
+  - park trampolin
+  - basen / sauna
+  - indoor aktywność (bo zimno)
+
+TRANSPORT:
+- jeśli blisko → pieszo + czas
+- jeśli dalej → tramwaj/autobus (nr + gdzie wysiąść)
+- jeśli auto → info o parkingu
+
+FORMAT (SZTYWNY):
 10:00 – NAZWA MIEJSCA
-Opis (min 2 zdania + ciekawostka)
-Dojście: pieszo X min / tramwaj nr X (wysiądź: ...)
+Opis (min 2-3 zdania + ciekawostka)
+Dojście: ...
 
 11:30 – NAZWA MIEJSCA
 Opis...
 Dojście...
 
-12:30 – NAZWA MIEJSCA
-Opis...
-Dojście...
+(ciąg dalszy aż do wieczora)
 
-ZASADY FORMATU:
-- MUSI być "– NAZWA"
-- MUSI być "Dojście:"
-- NIE używaj "undefined"
-- NIE powtarzaj godzin
-- każdy punkt inny typ (kawa → spacer → jedzenie → atrakcja)
-
-Styl: luźny jak kolega.
-
+Styl:
+- luźny jak polecenie od ziomka
 `;
 
   try {
