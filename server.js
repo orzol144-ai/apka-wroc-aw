@@ -22,7 +22,6 @@ async function getWeather() {
       "https://api.open-meteo.com/v1/forecast?latitude=51.11&longitude=17.03&current_weather=true"
     );
     const data = await res.json();
-
     return { temp: data.current_weather?.temperature || 15 };
   } catch {
     return { temp: 15 };
@@ -63,7 +62,7 @@ async function getAttractions() {
   }
 }
 
-// 🔥 JEDZENIE
+// 🔥 JEDZENIE / KAWA
 async function getFoodPlaces() {
   const query = `
   [out:json];
@@ -101,7 +100,7 @@ async function getFoodPlaces() {
   }
 }
 
-// 🔥 FLOW
+// 🔥 NOWY FLOW (ODPORNY – zawsze pełny plan)
 function buildSmartFlow(places) {
   const food = places.filter(p => p.typ === "food");
   const coffee = places.filter(p => p.typ === "coffee");
@@ -113,18 +112,29 @@ function buildSmartFlow(places) {
   if (attr[1]) result.push(attr[1]);
 
   if (coffee[0]) result.push(coffee[0]);
-
-  if (attr[2]) result.push(attr[2]);
-
-  if (food[0]) result.push(food[0]);
+  else if (attr[2]) result.push(attr[2]);
 
   if (attr[3]) result.push(attr[3]);
 
-  if (coffee[1]) result.push(coffee[1]);
+  if (food[0]) result.push(food[0]);
+  else if (coffee[1]) result.push(coffee[1]);
 
-  if (food[1]) result.push(food[1]);
+  if (attr[4]) result.push(attr[4]);
 
-  return result.filter(Boolean).slice(0, 10);
+  if (coffee[2]) result.push(coffee[2]);
+  else if (food[1]) result.push(food[1]);
+
+  // 🔥 fallback – zawsze dobija do min 8 miejsc
+  let i = 0;
+  while (result.length < 8 && i < places.length) {
+    const p = places[i];
+    if (!result.find(x => x.miejsce === p.miejsce)) {
+      result.push(p);
+    }
+    i++;
+  }
+
+  return result.slice(0, 10);
 }
 
 // 🧠 AI
@@ -198,7 +208,7 @@ app.post("/plan", async (req, res) => {
 
     let allPlaces = [
       ...attractions,
-      ...attractions,
+      ...attractions, // boost atrakcji
       ...food
     ];
 
