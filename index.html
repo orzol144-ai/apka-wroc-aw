@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <title>Plan dnia</title>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-
 <style>
 body {
   margin:0;
@@ -23,15 +21,6 @@ body {
   border-radius:20px;
   width:100%;
   max-width:400px;
-  text-align:center;
-}
-
-button, select {
-  width:100%;
-  margin-top:10px;
-  padding:12px;
-  border-radius:12px;
-  border:none;
 }
 
 .card {
@@ -39,21 +28,6 @@ button, select {
   background:#1f1f2e;
   padding:15px;
   border-radius:15px;
-}
-
-.actions {
-  display:flex;
-  gap:10px;
-  margin-top:15px;
-}
-
-.actions button {
-  flex:1;
-}
-
-.disabled {
-  opacity:0.4;
-  pointer-events:none;
 }
 </style>
 </head>
@@ -70,58 +44,20 @@ button, select {
   <option value="romantyczny">❤️ Romantyczny</option>
 </select>
 
-<button onclick="start()">🚀 Start</button>
+<button onclick="start()">🚀 Generuj plan</button>
 
 <div id="app"></div>
 
-<div id="map" style="height:300px; margin-top:20px; border-radius:15px;"></div>
-
 </div>
-
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
 
-let list = [];
-let index = 0;
-let finalPlan = [];
-let weatherData = null;
-
-let map;
-let markers = [];
-
-const MAX_ITEMS = 7;
-
-function initMap() {
-  if (!map) {
-    map = L.map('map').setView([51.11, 17.03], 13);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap'
-    }).addTo(map);
-  }
-}
-
-function clearMarkers() {
-  markers.forEach(m => map.removeLayer(m));
-  markers = [];
-}
-
-function addMarker(item) {
-  if (!item.lat || !item.lon) return;
-
-  const marker = L.marker([item.lat, item.lon]).addTo(map)
-    .bindPopup(item.miejsce);
-
-  markers.push(marker);
-}
-
 async function start() {
+  const styl = document.getElementById("styl").value;
+
+  document.getElementById("app").innerHTML = "⏳ Tworzę plan...";
+
   try {
-    document.getElementById("app").innerHTML = "⏳ Generuję...";
-
-    const styl = document.getElementById("styl").value;
-
     const res = await fetch("/plan", {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
@@ -130,115 +66,25 @@ async function start() {
 
     const data = await res.json();
 
-    // 🔥 HARD FIX – zawsze lista
-    if (!data || !Array.isArray(data.list) || data.list.length === 0) {
-      document.getElementById("app").innerHTML = "❌ Brak planu";
-      return;
-    }
-
-    list = data.list;
-    index = 0;
-    finalPlan = [];
-    weatherData = data.weather || {};
-
-    initMap();
-    clearMarkers();
-
-    render();
-
-  } catch (e) {
-    console.error(e);
-    document.getElementById("app").innerHTML = "❌ Błąd";
-  }
-}
-
-function render() {
-  const app = document.getElementById("app");
-
-  if (index >= list.length) return showFinal();
-
-  const item = list[index];
-
-  if (!item || !item.miejsce) {
-    index++;
-    return render();
-  }
-
-  const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.miejsce)}`;
-
-  const isFull = finalPlan.length >= MAX_ITEMS;
-
-  app.innerHTML = `
-    <div>🌦️ ${weatherData?.temp ?? "?"}°C</div>
-
-    <div class="card">
-      <h3>${item.miejsce}</h3>
-      <p>${item.opis || ""}</p>
-
-      <p>⭐ ${item.rating || "4.5"} (${item.opinie || "???"} opinii)</p>
-
-      <a href="${mapUrl}" target="_blank">📍 Google Maps</a>
-
-      <div class="actions">
-        <button onclick="reject()">👎</button>
-        <button class="${isFull ? 'disabled' : ''}" onclick="accept()">👍</button>
-      </div>
-    </div>
-  `;
-}
-
-function accept() {
-  if (finalPlan.length >= MAX_ITEMS) {
-    index++;
-    render();
-    return;
-  }
-
-  addMarker(list[index]);
-  finalPlan.push(list[index]);
-  index++;
-  render();
-}
-
-function reject() {
-  index++;
-  render();
-}
-
-function showFinal() {
-  try {
-    let html = "<h3>🔥 Twój plan dnia</h3>";
-
-    const unique = [];
-    finalPlan.forEach(p => {
-      if (!unique.find(x => x.miejsce === p.miejsce)) {
-        unique.push(p);
-      }
-    });
+    let html = "<h3>🔥 Twój dzień</h3>";
 
     let hour = 10;
 
-    unique.forEach(item => {
-      const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.miejsce || "")}`;
-
+    data.list.forEach(item => {
       html += `
         <div class="card">
           <h4>${hour}:00 — ${item.miejsce}</h4>
-          <p>${item.opis || ""}</p>
-          <p>⭐ ${item.rating || "4.5"} (${item.opinie || "???"} opinii)</p>
-          <a href="${mapUrl}" target="_blank">📍 Google Maps</a>
+          <p>${item.opis}</p>
+          <p>🚶 ${item.czas}</p>
         </div>
       `;
-
       hour += 2;
-      if (hour > 22) return;
     });
 
     document.getElementById("app").innerHTML = html;
 
-  } catch (e) {
-    console.error(e);
-    document.getElementById("app").innerHTML = "❌ Błąd renderowania";
+  } catch {
+    document.getElementById("app").innerHTML = "❌ Błąd";
   }
 }
 
