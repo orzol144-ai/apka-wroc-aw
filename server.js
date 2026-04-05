@@ -33,9 +33,7 @@ async function getAttractions() {
   const query = `
   [out:json];
   area["name"="Wrocław"]->.searchArea;
-  (
-    node["tourism"](area.searchArea);
-  );
+  (node["tourism"](area.searchArea););
   out body;
   `;
 
@@ -49,7 +47,7 @@ async function getAttractions() {
 
     return data.elements
       .filter(p => p.tags && p.tags.name)
-      .slice(0, 25)
+      .slice(0, 30)
       .map(p => ({
         miejsce: p.tags.name,
         lat: p.lat,
@@ -62,14 +60,12 @@ async function getAttractions() {
   }
 }
 
-// 🔥 JEDZENIE / KAWA
+// 🔥 FOOD
 async function getFoodPlaces() {
   const query = `
   [out:json];
   area["name"="Wrocław"]->.searchArea;
-  (
-    node["amenity"~"restaurant|cafe|fast_food"](area.searchArea);
-  );
+  (node["amenity"~"restaurant|cafe|fast_food"](area.searchArea););
   out body;
   `;
 
@@ -83,8 +79,7 @@ async function getFoodPlaces() {
 
     return data.elements
       .filter(p => p.tags && p.tags.name)
-      .filter(p => p.tags.name.length > 3)
-      .slice(0, 40)
+      .slice(0, 50)
       .map(p => ({
         miejsce: p.tags.name,
         lat: p.lat,
@@ -100,75 +95,35 @@ async function getFoodPlaces() {
   }
 }
 
-// 🔥 FLOW (zawsze pełny plan)
-function buildSmartFlow(places) {
-  const food = places.filter(p => p.typ === "food");
-  const coffee = places.filter(p => p.typ === "coffee");
-  const attr = places.filter(p => p.typ === "attraction");
-
+// 🔥 FLOW — PROSTY I NIEZAWODNY
+function buildSmartFlow(allPlaces) {
   const result = [];
 
-  if (attr[0]) result.push(attr[0]);
-  if (attr[1]) result.push(attr[1]);
-
-  if (coffee[0]) result.push(coffee[0]);
-  else if (attr[2]) result.push(attr[2]);
-
-  if (attr[3]) result.push(attr[3]);
-
-  if (food[0]) result.push(food[0]);
-  else if (coffee[1]) result.push(coffee[1]);
-
-  if (attr[4]) result.push(attr[4]);
-
-  if (coffee[2]) result.push(coffee[2]);
-  else if (food[1]) result.push(food[1]);
-
-  // fallback
-  let i = 0;
-  while (result.length < 8 && i < places.length) {
-    const p = places[i];
-    if (!result.find(x => x.miejsce === p.miejsce)) {
-      result.push(p);
+  for (let i = 0; i < allPlaces.length; i++) {
+    if (!result.find(x => x.miejsce === allPlaces[i].miejsce)) {
+      result.push(allPlaces[i]);
     }
-    i++;
+    if (result.length >= 10) break;
   }
 
-  return result.slice(0, 10);
+  return result;
 }
 
-// 🧠 AI (KONKRET – zero lania wody)
+// 🧠 AI (konkret)
 async function enrichPlacesWithAIStyled(places, styl) {
   try {
     const prompt = `
-Opisz miejsca KONKRETNIE i PRAKTYCZNIE.
-
-ZASADY:
-- max 1 zdanie
-- bez metafor i poezji
-- napisz co tam jest / co robić / co zjeść
-
-PRZYKŁADY DOBRE:
-- "Pizzeria z piecem opalanym drewnem, popularna margherita i pizza z burratą."
-- "Historyczna część miasta z katedrą i brukowanymi uliczkami, dobre miejsce na spacer."
-- "Kawiarnia specialty znana z dobrej kawy i śniadań."
-
-PRZYKŁADY ZŁE:
-- "magiczne miejsce"
-- "dusza miasta"
+Opisz miejsca konkretnie (1 zdanie, bez metafor).
 
 Styl: ${styl}
 
-Dodaj:
-- liczba opinii
+Powiedz:
+- co tam jest
+- co warto zrobić / zjeść
 
-JSON:
+Zwróć JSON:
 [
-  {
-    "miejsce": "nazwa",
-    "opis": "opis",
-    "opinie": 1234
-  }
+  { "miejsce": "nazwa", "opis": "opis", "opinie": 1234 }
 ]
 
 Miejsca:
@@ -200,17 +155,13 @@ ${places.map(p => p.miejsce).join("\n")}
 
       return {
         ...p,
-        opis: found?.opis || "Popularne miejsce, warto sprawdzić na miejscu.",
+        opis: found?.opis || "Popularne miejsce, warto odwiedzić.",
         opinie: found?.opinie || Math.floor(Math.random()*2000+200)
       };
     });
 
   } catch {
-    return places.map(p => ({
-      ...p,
-      opis: "Popularne miejsce, warto sprawdzić na miejscu.",
-      opinie: Math.floor(Math.random()*2000+200)
-    }));
+    return places;
   }
 }
 
@@ -221,23 +172,29 @@ app.post("/plan", async (req, res) => {
 
     const weather = await getWeather();
 
-    const attractions = await getAttractions();
-    const food = await getFoodPlaces();
+    let attractions = await getAttractions();
+    let food = await getFoodPlaces();
 
     let allPlaces = [
       ...attractions,
-      ...attractions,
-      ...food
+      ...food,
+      ...attractions // boost
     ];
 
+    // shuffle
     allPlaces.sort(() => Math.random() - 0.5);
 
     let places = buildSmartFlow(allPlaces);
 
-    if (!places.length) {
+    // 🔥 HARD FIX — zawsze minimum
+    if (places.length < 6) {
       places = [
         { miejsce: "Rynek Wrocław", lat: 51.109, lon: 17.032, typ: "attraction" },
-        { miejsce: "Ostrów Tumski", lat: 51.114, lon: 17.046, typ: "attraction" }
+        { miejsce: "Ostrów Tumski", lat: 51.114, lon: 17.046, typ: "attraction" },
+        { miejsce: "Hala Targowa", lat: 51.111, lon: 17.041, typ: "food" },
+        { miejsce: "Panorama Racławicka", lat: 51.110, lon: 17.044, typ: "attraction" },
+        { miejsce: "Bulwary nad Odrą", lat: 51.108, lon: 17.035, typ: "attraction" },
+        { miejsce: "Bernard", lat: 51.109, lon: 17.032, typ: "food" }
       ];
     }
 
