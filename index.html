@@ -1,4 +1,76 @@
-<h1>DZIAŁA FRONT</h1>
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>Plan dnia</title>
+
+<style>
+body {
+  margin:0;
+  font-family: Arial;
+  background: linear-gradient(135deg,#1e1e2f,#3b3b6d);
+  color:white;
+  display:flex;
+  justify-content:center;
+  padding:20px;
+}
+
+.box {
+  background:#2a2a3d;
+  padding:20px;
+  border-radius:20px;
+  width:100%;
+  max-width:400px;
+  text-align:center;
+}
+
+button, select {
+  width:100%;
+  margin-top:10px;
+  padding:12px;
+  border-radius:12px;
+  border:none;
+}
+
+.card {
+  margin-top:20px;
+  background:#1f1f2e;
+  padding:15px;
+  border-radius:15px;
+}
+
+.actions {
+  display:flex;
+  gap:10px;
+  margin-top:15px;
+}
+
+.actions button {
+  flex:1;
+  font-size:18px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+
+<h2>📍 Plan dnia</h2>
+
+<select id="styl">
+  <option value="leniwy">😴 Leniwy</option>
+  <option value="aktywny">🏃 Aktywny</option>
+  <option value="romantyczny">❤️ Romantyczny</option>
+</select>
+
+<button onclick="start()">🚀 Start</button>
+
+<div id="app"></div>
+
+</div>
+
+<!-- 🔥 TO MUSI BYĆ NA DOLE I W CAŁOŚCI -->
 <script>
 
 let list = [];
@@ -20,8 +92,6 @@ async function start() {
 
     const data = await res.json();
 
-    console.log("DATA:", data); // 🔥 debug
-
     if (!data.list || !data.list.length) {
       document.getElementById("app").innerHTML = "❌ Brak planu";
       return;
@@ -35,99 +105,10 @@ async function start() {
     render();
 
   } catch (err) {
-    console.error("FRONT ERROR:", err);
+    console.error(err);
     document.getElementById("app").innerHTML = "❌ Błąd aplikacji";
   }
 }
-
-function render() {
-  try {
-    const app = document.getElementById("app");
-
-    if (!list.length) {
-      app.innerHTML = "❌ Brak danych";
-      return;
-    }
-
-    if (index >= list.length) {
-      return showFinal();
-    }
-
-    const item = list[index];
-
-    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.miejsce || "")}`;
-
-    app.innerHTML = `
-      <div style="margin-bottom:10px;font-size:14px;">
-        🌦️ ${weatherData?.temp ?? "?"}°C
-      </div>
-
-      <div class="card">
-        <h3>${item.miejsce || "Brak nazwy"}</h3>
-        <p>${item.opis || ""}</p>
-
-        <a href="${mapUrl}" target="_blank">
-          📍 Otwórz mapę
-        </a>
-
-        <div class="actions">
-          <button onclick="reject()">👎</button>
-          <button onclick="accept()">👍</button>
-        </div>
-      </div>
-    `;
-  } catch (e) {
-    console.error("RENDER ERROR:", e);
-  }
-}
-
-function accept() {
-  finalPlan.push(list[index]);
-  index++;
-  render();
-}
-
-function reject() {
-  index++;
-  render();
-}
-
-function showFinal() {
-  try {
-    let html = `
-      <h3>🔥 Twój plan dnia</h3>
-    `;
-
-    let hour = 10;
-
-    finalPlan.forEach(item => {
-      const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.miejsce || "")}`;
-
-      html += `
-        <div class="card">
-          <h4>${hour}:00 — ${item.miejsce}</h4>
-          <p>${item.opis}</p>
-          <a href="${mapUrl}" target="_blank">
-            📍 Otwórz mapę
-          </a>
-        </div>
-      `;
-
-      hour += 2;
-    });
-
-    if (!finalPlan.length) {
-      html += "<p>❌ Nic nie wybrałeś</p>";
-    }
-
-    document.getElementById("app").innerHTML = html;
-
-  } catch (e) {
-    console.error("FINAL ERROR:", e);
-  }
-}
-
-</script>
 
 function render() {
   const app = document.getElementById("app");
@@ -138,19 +119,19 @@ function render() {
 
   const item = list[index];
 
-  const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.miejsce)}`;
+  const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.miejsce || "")}`;
 
   app.innerHTML = `
-    <div class="weather">
+    <div style="margin-bottom:10px;font-size:14px;">
       🌦️ ${weatherData?.temp ?? "?"}°C
     </div>
 
     <div class="card">
-      <h3>${item.miejsce}</h3>
-      <p>${item.opis}</p>
+      <h3>${item.miejsce || "Brak nazwy"}</h3>
+      <p>${item.opis || ""}</p>
 
-      <a class="map-link" href="${mapUrl}" target="_blank">
-        📍 Otwórz w Google Maps
+      <a href="${mapUrl}" target="_blank">
+        📍 Otwórz mapę
       </a>
 
       <div class="actions">
@@ -173,25 +154,19 @@ function reject() {
 }
 
 function showFinal() {
-  let html = `
-    <div class="weather">
-      🌦️ ${weatherData?.temp ?? "?"}°C
-    </div>
-
-    <h3>🔥 Twój plan dnia</h3>
-  `;
+  let html = "<h3>🔥 Twój plan dnia</h3>";
 
   let hour = 10;
 
   finalPlan.forEach(item => {
-    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.miejsce)}`;
+    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.miejsce || "")}`;
 
     html += `
       <div class="card">
         <h4>${hour}:00 — ${item.miejsce}</h4>
         <p>${item.opis}</p>
-        <a class="map-link" href="${mapUrl}" target="_blank">
-          📍 Otwórz w Google Maps
+        <a href="${mapUrl}" target="_blank">
+          📍 Otwórz mapę
         </a>
       </div>
     `;
@@ -207,3 +182,6 @@ function showFinal() {
 }
 
 </script>
+
+</body>
+</html>
