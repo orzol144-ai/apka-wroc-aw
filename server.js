@@ -31,13 +31,47 @@ async function getWeather() {
   }
 }
 
-// 🔥 LEPSZE MIEJSCA (FILTER + TYP)
-async function getPlaces(type) {
+// 🔥 ATRAKCJE (tourism)
+async function getAttractions() {
   const query = `
   [out:json];
   area["name"="Wrocław"]->.searchArea;
   (
-    node["amenity"~"${type}|restaurant|cafe|fast_food"](area.searchArea);
+    node["tourism"](area.searchArea);
+  );
+  out body;
+  `;
+
+  try {
+    const res = await fetch("https://overpass-api.de/api/interpreter", {
+      method: "POST",
+      body: query
+    });
+
+    const data = await res.json();
+
+    return data.elements
+      .filter(p => p.tags && p.tags.name)
+      .slice(0, 25)
+      .map(p => ({
+        miejsce: p.tags.name,
+        lat: p.lat,
+        lon: p.lon,
+        typ: "attraction",
+        rating: (Math.random() * 1.5 + 3.5).toFixed(1)
+      }));
+  } catch {
+    return [];
+  }
+}
+
+// 🔥 JEDZENIE / KAWA
+async function getFoodPlaces() {
+  const query = `
+  [out:json];
+  area["name"="Wrocław"]->.searchArea;
+  (
+    node["amenity"~"restaurant|cafe|fast_food"](area.searchArea);
   );
   out body;
   `;
@@ -53,7 +87,7 @@ async function getPlaces(type) {
     return data.elements
       .filter(p => p.tags && p.tags.name)
       .filter(p => p.tags.name.length > 3)
-      .slice(0, 30)
+      .slice(0, 40)
       .map(p => ({
         miejsce: p.tags.name,
         lat: p.lat,
@@ -61,18 +95,15 @@ async function getPlaces(type) {
         typ:
           ["restaurant", "fast_food"].includes(p.tags.amenity)
             ? "food"
-            : p.tags.amenity === "cafe"
-            ? "coffee"
-            : "attraction",
+            : "coffee",
         rating: (Math.random() * 1.5 + 3.5).toFixed(1)
       }));
-
   } catch {
     return [];
   }
 }
 
-// 🔥 LOGICZNY FLOW DNIA
+// 🔥 FLOW — zawsze MIX (attraction → coffee → attraction → food ...)
 function buildSmartFlow(places) {
   const food = places.filter(p => p.typ === "food");
   const coffee = places.filter(p => p.typ === "coffee");
@@ -80,38 +111,36 @@ function buildSmartFlow(places) {
 
   const result = [];
 
-  result.push(...attr.slice(0, 2)); // start
+  if (attr[0]) result.push(attr[0]);
+  if (attr[1]) result.push(attr[1]);
 
   if (coffee[0]) result.push(coffee[0]);
 
-  result.push(...attr.slice(2, 4));
+  if (attr[2]) result.push(attr[2]);
 
   if (food[0]) result.push(food[0]);
+
+  if (attr[3]) result.push(attr[3]);
 
   if (coffee[1]) result.push(coffee[1]);
 
   if (food[1]) result.push(food[1]);
 
-  return result.slice(0, 8);
+  return result.filter(Boolean).slice(0, 10);
 }
 
-// 🧠 AI OPIS (REALISTYCZNY)
+// 🧠 AI OPISY (realistyczne, 1 zdanie)
 async function enrichPlacesWithAIStyled(places, styl) {
   try {
     const prompt = `
-Opisz miejsca REALISTYCZNIE.
-
-Zasady:
-- 1 zdanie
-- bez wymyślania bajek
-- konkretnie
+Opisz miejsca REALISTYCZNIE (1 zdanie, bez wymyślania).
 
 Styl: ${styl}
 
 Dodaj:
-- liczba opinii
+- liczbę opinii
 
-JSON:
+Zwróć JSON:
 [
   {
     "miejsce": "nazwa",
@@ -127,7 +156,7 @@ ${places.map(p => p.miejsce).join("\n")}
     const res = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Authorization": \`Bearer \${process.env.OPENAI_API_KEY}\`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
@@ -155,7 +184,11 @@ ${places.map(p => p.miejsce).join("\n")}
     });
 
   } catch {
-    return places;
+    return places.map(p => ({
+      ...p,
+      opis: "Miejsce warte odwiedzenia.",
+      opinie: Math.floor(Math.random()*2000+200)
+    }));
   }
 }
 
@@ -166,31 +199,30 @@ app.post("/plan", async (req, res) => {
 
     const weather = await getWeather();
 
-    let allPlaces = [];
+    // 🔥 więcej atrakcji niż jedzenia (klucz)
+    const attractions = await getAttractions();
+    const food = await getFoodPlaces();
 
-    const baseTypes =
-      styl === "aktywny"
-        ? ["fast_food", "restaurant"]
-        : styl === "romantyczny"
-        ? ["restaurant", "cafe"]
-        : ["cafe"];
+    let allPlaces = [
+      ...attractions,
+      ...attractions, // 🔥 boost atrakcji
+      ...food
+    ];
 
-    for (let t of baseTypes) {
-      const places = await getPlaces(t);
-      allPlaces = allPlaces.concat(places);
-    }
-
+    // shuffle
     allPlaces.sort(() => Math.random() - 0.5);
 
     let places = buildSmartFlow(allPlaces);
 
+    // fallback
     if (!places.length) {
       places = [
-        { miejsce: "Rynek Wrocław", lat: 51.109, lon: 17.032 },
-        { miejsce: "Ostrów Tumski", lat: 51.114, lon: 17.046 }
+        { miejsce: "Rynek Wrocław", lat: 51.109, lon: 17.032, typ: "attraction" },
+        { miejsce: "Ostrów Tumski", lat: 51.114, lon: 17.046, typ: "attraction" }
       ];
     }
 
+    // AI
     places = await enrichPlacesWithAIStyled(places, styl);
 
     res.json({ list: places, weather });
