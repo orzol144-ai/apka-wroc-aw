@@ -7,12 +7,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ROOT
 app.get("/", (req, res) => {
   res.sendFile(path.resolve("index.html"));
 });
 
-// TEST
 app.get("/test", (req, res) => {
   res.send("OK");
 });
@@ -31,7 +29,7 @@ async function getWeather() {
   }
 }
 
-// 🔥 ATRAKCJE (tourism)
+// 🔥 ATRAKCJE
 async function getAttractions() {
   const query = `
   [out:json];
@@ -65,7 +63,7 @@ async function getAttractions() {
   }
 }
 
-// 🔥 JEDZENIE / KAWA
+// 🔥 JEDZENIE
 async function getFoodPlaces() {
   const query = `
   [out:json];
@@ -103,7 +101,7 @@ async function getFoodPlaces() {
   }
 }
 
-// 🔥 FLOW — zawsze MIX (attraction → coffee → attraction → food ...)
+// 🔥 FLOW
 function buildSmartFlow(places) {
   const food = places.filter(p => p.typ === "food");
   const coffee = places.filter(p => p.typ === "coffee");
@@ -129,18 +127,18 @@ function buildSmartFlow(places) {
   return result.filter(Boolean).slice(0, 10);
 }
 
-// 🧠 AI OPISY (realistyczne, 1 zdanie)
+// 🧠 AI
 async function enrichPlacesWithAIStyled(places, styl) {
   try {
     const prompt = `
-Opisz miejsca REALISTYCZNIE (1 zdanie, bez wymyślania).
+Opisz miejsca REALISTYCZNIE (1 zdanie).
 
 Styl: ${styl}
 
 Dodaj:
-- liczbę opinii
+- liczba opinii
 
-Zwróć JSON:
+JSON:
 [
   {
     "miejsce": "nazwa",
@@ -156,7 +154,7 @@ ${places.map(p => p.miejsce).join("\n")}
     const res = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
-        "Authorization": \`Bearer \${process.env.OPENAI_API_KEY}\`,
+        "Authorization": "Bearer " + process.env.OPENAI_API_KEY,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
@@ -184,11 +182,7 @@ ${places.map(p => p.miejsce).join("\n")}
     });
 
   } catch {
-    return places.map(p => ({
-      ...p,
-      opis: "Miejsce warte odwiedzenia.",
-      opinie: Math.floor(Math.random()*2000+200)
-    }));
+    return places;
   }
 }
 
@@ -199,22 +193,19 @@ app.post("/plan", async (req, res) => {
 
     const weather = await getWeather();
 
-    // 🔥 więcej atrakcji niż jedzenia (klucz)
     const attractions = await getAttractions();
     const food = await getFoodPlaces();
 
     let allPlaces = [
       ...attractions,
-      ...attractions, // 🔥 boost atrakcji
+      ...attractions,
       ...food
     ];
 
-    // shuffle
     allPlaces.sort(() => Math.random() - 0.5);
 
     let places = buildSmartFlow(allPlaces);
 
-    // fallback
     if (!places.length) {
       places = [
         { miejsce: "Rynek Wrocław", lat: 51.109, lon: 17.032, typ: "attraction" },
@@ -222,7 +213,6 @@ app.post("/plan", async (req, res) => {
       ];
     }
 
-    // AI
     places = await enrichPlacesWithAIStyled(places, styl);
 
     res.json({ list: places, weather });
