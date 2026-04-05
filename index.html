@@ -42,15 +42,12 @@ button {
   gap:10px;
 }
 
-.quick button {
-  width:50%;
-}
-
 .card {
   background:#2a2a3a;
   padding:15px;
   margin-top:15px;
   border-radius:15px;
+  position:relative;
 }
 
 .nav {
@@ -72,22 +69,17 @@ button {
 <h2>📍 Plan dnia</h2>
 
 <select id="styl">
-<option value="leniwy">😴 Leniwy</option>
-<option value="aktywny">🏃 Aktywny</option>
-<option value="romantyczny">❤️ Romantyczny</option>
+<option value="leniwy">😴</option>
+<option value="aktywny">🏃</option>
+<option value="romantyczny">❤️</option>
 </select>
 
 <select id="transport">
-<option value="pieszo">🚶 Pieszo</option>
-<option value="auto">🚗 Auto</option>
+<option value="pieszo">🚶</option>
+<option value="auto">🚗</option>
 </select>
 
 <button onclick="start()">🚀 Start</button>
-
-<div class="quick">
-<button onclick="glodny()">🍔 Głodny</button>
-<button onclick="zmeczony()">😴 Odpoczynek</button>
-</div>
 
 <div id="app"></div>
 
@@ -95,14 +87,14 @@ button {
 
 <script>
 
-let rawText = "";
+let slots = [];
+let current = {};
 
-// 🚀 START
 async function start(){
   const styl = document.getElementById("styl").value;
   const transport = document.getElementById("transport").value;
 
-  document.getElementById("app").innerHTML = "⏳ Generuję plan...";
+  document.getElementById("app").innerHTML = "⏳ Generuję...";
 
   const res = await fetch("/plan",{
     method:"POST",
@@ -111,59 +103,81 @@ async function start(){
   });
 
   const data = await res.json();
-  rawText = data.wynik;
 
+  parse(data.wynik);
   render();
 }
 
-// 🍔 GŁODNY
-async function glodny(){
-  const res = await fetch("/food",{method:"POST"});
-  const data = await res.json();
-  rawText = data.wynik;
-  render();
+// 🔥 PARSER MULTI OPCJI
+function parse(text){
+  slots = [];
+  current = {};
+
+  const blocks = text.split(/\n\d{2}:\d{2}/).slice(1);
+
+  blocks.forEach((block,i)=>{
+    const options = block.split("\n-").filter(x=>x.trim());
+    slots.push(options);
+    current[i]=0;
+  });
 }
 
-// 😴 ODPOCZYNEK
-async function zmeczony(){
-  const res = await fetch("/short",{method:"POST"});
-  const data = await res.json();
-  rawText = data.wynik;
-  render();
-}
-
-// 🔥 RENDER PLANU
+// 🎯 RENDER
 function render(){
   const app = document.getElementById("app");
   app.innerHTML = "<h3>🔥 Plan dnia</h3>";
 
-  // DZIELENIE PO GODZINACH
-  const parts = rawText.split(/(?=\d{2}:\d{2})/);
+  slots.forEach((slot,i)=>{
+    const txt = slot[current[i]].trim();
 
-  parts.forEach(p => {
-    const text = p.trim();
-    if(!text) return;
-
-    // NAZWA
-    const nameMatch = text.match(/\d{2}:\d{2} – (.+)/);
-    const name = nameMatch ? nameMatch[1] : "Miejsce";
-
-    // GODZINA
-    const timeMatch = text.match(/\d{2}:\d{2}/);
-    const time = timeMatch ? timeMatch[0] : "";
-
+    const name = txt.split("–")[0] || "Miejsce";
     const map = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`;
 
     app.innerHTML += `
       <div class="card">
-  <button onclick="usun(this)" style="float:right;background:red;">❌</button>
-        <b>${time} – ${name}</b><br><br>
-        ${text.replace(/\d{2}:\d{2} – .+/, "")}<br><br>
+
+        <button onclick="usun(this)" style="
+        position:absolute;
+        top:10px;
+        right:10px;
+        background:none;
+        color:#ff6b6b;
+        font-size:18px;
+        border:none;">✖</button>
+
+        <b>${name}</b><br><br>
+        ${txt}<br><br>
 
         <a href="${map}" target="_blank">📍 Mapy</a>
+
+        <div class="nav">
+          <button onclick="prev(${i})">⬅️</button>
+          <button onclick="next(${i})">➡️</button>
+        </div>
+
       </div>
     `;
   });
+}
+
+// 👉 SWIPE
+function next(i){
+  if(current[i] < slots[i].length-1){
+    current[i]++;
+    render();
+  }
+}
+
+function prev(i){
+  if(current[i] > 0){
+    current[i]--;
+    render();
+  }
+}
+
+// ❌ USUŃ
+function usun(btn){
+  btn.parentElement.remove();
 }
 
 </script>

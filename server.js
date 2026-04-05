@@ -29,88 +29,49 @@ async function askAI(prompt) {
   return data.output[0].content[0].text;
 }
 
-// 📍 PLAN DNIA
+// 📍 PLAN DNIA MULTI OPCJE
 app.post("/plan", async (req, res) => {
   const { styl, transport } = req.body;
 
-const prompt = `
-Stwórz REALNY plan całego dnia we Wrocławiu.
-
-WARUNKI:
-- styl: ${styl}
-- transport: ${transport}
-- dzień od 10:00 do ok. 20:00
+  const prompt = `
+Stwórz plan dnia we Wrocławiu z WIELOMA OPCJAMI.
 
 ZASADY:
-- plan musi mieć MINIMUM 8 punktów
-- zachowaj LOGIKĘ dnia:
-  kawa → atrakcje → jedzenie → atrakcje → chill → kolacja
+- dzień 10:00–20:00
+- MINIMUM 6 bloków (godzin)
+- każdy blok = 3-5 opcji
 
-- NIE powtarzaj typów miejsc pod rząd (np. 2x kawiarnia)
-- miejsca muszą być BLISKO siebie (max 15–20 min)
-- NIE skacz po całym mieście
+FORMAT (BARDZO WAŻNY):
 
-SPORT:
-- jeśli styl = aktywny → dodaj coś typu:
-  - ścianka wspinaczkowa
-  - park trampolin
-  - basen / sauna
-  - indoor aktywność (bo zimno)
+10:00
+- Kawiarnia A – opis... Dojście...
+- Kawiarnia B – opis... Dojście...
+- Kawiarnia C – opis... Dojście...
 
-TRANSPORT:
-- jeśli blisko → pieszo + czas
-- jeśli dalej → tramwaj/autobus (nr + gdzie wysiąść)
-- jeśli auto → info o parkingu
+11:30
+- Atrakcja A – opis... Dojście...
+- Atrakcja B – opis... Dojście...
+- Atrakcja C – opis... Dojście...
 
-FORMAT (SZTYWNY):
-10:00 – NAZWA MIEJSCA
-Opis (min 2-3 zdania + ciekawostka)
-Dojście: ...
+13:00
+- Jedzenie A – opis... Dojście...
+- Jedzenie B – opis... Dojście...
 
-11:30 – NAZWA MIEJSCA
-Opis...
-Dojście...
+ZASADY:
+- miejsca blisko siebie
+- logiczna trasa
+- NIE powtarzaj typów
+- dodaj ciekawostki
 
-(ciąg dalszy aż do wieczora)
-
-Styl:
-- luźny jak polecenie od ziomka
+Styl: luźny
 `;
 
   try {
     const wynik = await askAI(prompt);
     res.json({ wynik });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: "Błąd" });
   }
-});
-
-// 🍔 GŁODNY (nadpisuje plan)
-app.post("/food", async (req, res) => {
-  const prompt = `
-Podaj 3 dobre miejsca na jedzenie we Wrocławiu.
-
-FORMAT:
-NAZWA – opis + klimat + ciekawostka
-`;
-
-  const wynik = await askAI(prompt);
-  res.json({ wynik });
-});
-
-// 😴 ODPOCZYNEK (krótki plan)
-app.post("/short", async (req, res) => {
-  const prompt = `
-Stwórz krótki plan dnia (max 3 punkty).
-
-FORMAT:
-10:00 – NAZWA
-Opis...
-`;
-
-  const wynik = await askAI(prompt);
-  res.json({ wynik });
 });
 
 const PORT = process.env.PORT || 3000;
