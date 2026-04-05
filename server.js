@@ -60,7 +60,7 @@ async function getAttractions() {
   }
 }
 
-// 🔥 FOOD
+// 🔥 JEDZENIE / KAWA
 async function getFoodPlaces() {
   const query = `
   [out:json];
@@ -95,15 +95,43 @@ async function getFoodPlaces() {
   }
 }
 
-// 🔥 FLOW — PROSTY I NIEZAWODNY
+// 🔥 FLOW — KLUCZ: po jedzeniu zawsze atrakcja
 function buildSmartFlow(allPlaces) {
-  const result = [];
+  const food = allPlaces.filter(p => p.typ === "food");
+  const coffee = allPlaces.filter(p => p.typ === "coffee");
+  const attr = allPlaces.filter(p => p.typ === "attraction");
 
-  for (let i = 0; i < allPlaces.length; i++) {
-    if (!result.find(x => x.miejsce === allPlaces[i].miejsce)) {
-      result.push(allPlaces[i]);
+  const result = [];
+  let lastType = null;
+
+  function take(arr, type) {
+    if (!arr.length) return null;
+    const item = arr.shift();
+    result.push(item);
+    lastType = type;
+    return item;
+  }
+
+  while (result.length < 10 && (food.length || coffee.length || attr.length)) {
+
+    // 🔥 HARD RULE
+    if (lastType === "food") {
+      if (take(attr, "attraction")) continue;
+      if (take(coffee, "coffee")) continue;
+      break;
     }
-    if (result.length >= 10) break;
+
+    // start
+    if (!lastType) {
+      if (take(attr, "attraction")) continue;
+    }
+
+    // normal flow
+    if (take(attr, "attraction")) continue;
+    if (take(coffee, "coffee")) continue;
+    if (take(food, "food")) continue;
+
+    break;
   }
 
   return result;
@@ -119,9 +147,9 @@ Styl: ${styl}
 
 Powiedz:
 - co tam jest
-- co warto zrobić / zjeść
+- co zrobić / zjeść
 
-Zwróć JSON:
+JSON:
 [
   { "miejsce": "nazwa", "opis": "opis", "opinie": 1234 }
 ]
@@ -172,21 +200,20 @@ app.post("/plan", async (req, res) => {
 
     const weather = await getWeather();
 
-    let attractions = await getAttractions();
-    let food = await getFoodPlaces();
+    const attractions = await getAttractions();
+    const food = await getFoodPlaces();
 
     let allPlaces = [
       ...attractions,
-      ...food,
-      ...attractions // boost
+      ...attractions,
+      ...food
     ];
 
-    // shuffle
     allPlaces.sort(() => Math.random() - 0.5);
 
     let places = buildSmartFlow(allPlaces);
 
-    // 🔥 HARD FIX — zawsze minimum
+    // 🔥 gwarancja minimum
     if (places.length < 6) {
       places = [
         { miejsce: "Rynek Wrocław", lat: 51.109, lon: 17.032, typ: "attraction" },
