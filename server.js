@@ -31,15 +31,15 @@ async function askAI(prompt) {
   return data.output?.[0]?.content?.[0]?.text || "";
 }
 
-// 🔥 PARSER (najważniejsze)
+// 🔥 parser
 function parsePlan(text) {
   const blocks = text.split("\n\n");
 
   return blocks.map(block => {
     const lines = block.split("\n");
 
-    const titleLine = lines[0] || "";
-    const miejsce = titleLine.split("–")[1]?.trim() || "Miejsce";
+    const title = lines[0] || "";
+    const miejsce = title.split("–")[1]?.trim() || "Miejsce";
 
     const opis = lines.slice(1).join(" ").trim();
 
@@ -48,9 +48,10 @@ function parsePlan(text) {
 }
 
 app.post("/plan", async (req, res) => {
-  const { styl } = req.body;
+  try {
+    const { styl } = req.body;
 
-  const prompt = `
+    const prompt = `
 Stwórz plan dnia we Wrocławiu.
 
 STYL: ${styl}
@@ -58,12 +59,6 @@ STYL: ${styl}
 ZASADY:
 - 6 punktów
 - logiczna trasa (blisko siebie!)
-- każdy kolejny punkt ma odniesienie do poprzedniego
-
-DOPASOWANIE:
-- leniwy → max 10 minut pieszo między punktami
-- romantyczny → klimat + kolacja + spacery
-- aktywny → mix ruch + jedzenie + atrakcje
 
 FORMAT:
 10:00 – NAZWA
@@ -75,12 +70,9 @@ WAŻNE:
 - każde miejsce REALNE
 `;
 
-  try {
     let wynik = await askAI(prompt);
 
-    console.log("WYNIK GPT:", wynik);
-
-    // 🔥 fallback jeśli AI zwróci śmieci
+    // fallback
     if (!wynik || wynik.length < 50) {
       wynik = `
 10:00 – Rynek Wrocław
@@ -111,15 +103,13 @@ Dojście: 12 min pieszo
 
     const list = parsePlan(wynik);
 
-    console.log("PARSED:", list);
-
     res.json({ list });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Błąd serwera" });
+    res.status(500).json({ error: "Server error" });
   }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Serwer działa na porcie", PORT));
+app.listen(PORT, () => console.log("Server running on port", PORT));
