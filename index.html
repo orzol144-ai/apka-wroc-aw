@@ -24,19 +24,12 @@ body {
   text-align:center;
 }
 
-select, button {
+button, select {
   width:100%;
   margin-top:10px;
   padding:12px;
   border-radius:12px;
   border:none;
-  font-size:16px;
-}
-
-button {
-  background:linear-gradient(135deg,#667eea,#764ba2);
-  color:white;
-  cursor:pointer;
 }
 
 .card {
@@ -44,19 +37,18 @@ button {
   background:#1f1f2e;
   padding:15px;
   border-radius:15px;
-  text-align:left;
 }
 
-.nav {
+.actions {
   display:flex;
   gap:10px;
   margin-top:15px;
 }
 
-.nav button {
+.actions button {
   flex:1;
+  font-size:18px;
 }
-
 </style>
 </head>
 
@@ -80,82 +72,79 @@ button {
 
 <script>
 
-let plan = [];
-let currentIndex = 0;
+let list = [];
+let index = 0;
+let finalPlan = [];
 
 async function start() {
   const styl = document.getElementById("styl").value;
 
-  document.getElementById("app").innerHTML = "⏳ Generuję plan...";
+  document.getElementById("app").innerHTML = "⏳ Generuję...";
 
-  try {
-    const res = await fetch("/plan", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ styl })
-    });
+  const res = await fetch("/plan", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ styl })
+  });
 
-    const data = await res.json();
+  const data = await res.json();
 
-    plan = data.plan || [];
-    currentIndex = 0;
+  list = data.list || [];
+  index = 0;
+  finalPlan = [];
 
-    render();
-
-  } catch (e) {
-    document.getElementById("app").innerHTML = "❌ Błąd";
-  }
+  render();
 }
 
 function render() {
   const app = document.getElementById("app");
 
-  if (!plan.length) {
-    app.innerHTML = "Brak planu";
-    return;
+  if (index >= list.length) {
+    return showFinal();
   }
 
-  const item = plan[currentIndex];
+  const item = list[index];
 
   app.innerHTML = `
     <div class="card">
-      <h3>${item.godzina} — ${item.miejsce}</h3>
+      <h3>${item.miejsce}</h3>
       <p>${item.opis}</p>
-      <p>🚶 ${item.dojscie}</p>
 
-      <div class="nav">
-        <button onclick="prev()">⬅️</button>
-        <button onclick="next()">➡️</button>
-        <button onclick="remove()">❌</button>
+      <div class="actions">
+        <button onclick="reject()">👎</button>
+        <button onclick="accept()">👍</button>
       </div>
     </div>
   `;
 }
 
-function next() {
-  if (currentIndex < plan.length - 1) {
-    currentIndex++;
-    render();
-  }
-}
-
-function prev() {
-  if (currentIndex > 0) {
-    currentIndex--;
-    render();
-  }
-}
-
-function remove() {
-  plan.splice(currentIndex, 1);
-
-  if (currentIndex >= plan.length) {
-    currentIndex = Math.max(0, plan.length - 1);
-  }
-
+function accept() {
+  finalPlan.push(list[index]);
+  index++;
   render();
+}
+
+function reject() {
+  index++;
+  render();
+}
+
+function showFinal() {
+  let html = "<h3>🔥 Twój plan dnia</h3>";
+
+  let hour = 10;
+
+  finalPlan.forEach(item => {
+    html += `
+      <div class="card">
+        <h4>${hour}:00 — ${item.miejsce}</h4>
+        <p>${item.opis}</p>
+      </div>
+    `;
+    hour += 2;
+  });
+
+  document.getElementById("app").innerHTML = html;
 }
 
 </script>

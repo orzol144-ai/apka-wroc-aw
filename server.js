@@ -28,42 +28,36 @@ async function askAI(prompt) {
   return data.output[0].content[0].text;
 }
 
-// 🔥 NOWY LEPSZY PLAN
+// 🔥 GENERATOR OPCJI (NIE PLANU!)
 app.post("/plan", async (req, res) => {
   const { styl } = req.body;
 
   const prompt = `
-Stwórz plan dnia we Wrocławiu.
+Stwórz LISTĘ 10-12 propozycji miejsc we Wrocławiu dla stylu: ${styl}
 
-Zwróć TYLKO JSON:
+Zwróć JSON:
 
 [
   {
-    "godzina": "10:00",
     "miejsce": "Nazwa miejsca",
-    "opis": "Opis + ciekawostka historyczna + klimat miejsca",
-    "dojscie": "jak dojść z poprzedniego miejsca (czas + ewentualnie tramwaj/autobus)"
+    "opis": "ciekawy opis + ciekawostka historyczna",
+    "typ": "kawiarnia / atrakcja / jedzenie"
   }
 ]
 
 ZASADY:
-- 6–8 punktów (pełny dzień)
-- realna trasa (blisko siebie)
-- różnorodność (kawa → spacer → atrakcja → jedzenie → coś ciekawego)
-- NIE powtarzaj tego samego typu miejsca pod rząd
-
-WAŻNE:
-- dodawaj ciekawostki (rok powstania, historia, coś unikalnego)
-- styl luźny, ale konkretny (jak znajomy poleca)
-
-Styl: ${styl}
+- różnorodne miejsca
+- konkretne nazwy
+- ciekawostki (rok, historia, unikalność)
+- bez powtórek
+- styl luźny
 `;
 
   try {
     const raw = await askAI(prompt);
     const parsed = JSON.parse(raw);
 
-    res.json({ plan: parsed });
+    res.json({ list: parsed });
 
   } catch (e) {
     console.error(e);
