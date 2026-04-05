@@ -11,7 +11,7 @@ app.get("/", (req, res) => {
   res.sendFile(path.resolve("index.html"));
 });
 
-// 🌦️ POGODA
+// 🌦️ pogoda
 async function getWeather() {
   try {
     const res = await fetch(
@@ -24,7 +24,7 @@ async function getWeather() {
   }
 }
 
-// 🚀 PLAN DNIA (NOWA LOGIKA)
+// 🚀 PLAN DNIA
 app.post("/plan", async (req, res) => {
   try {
     const { styl } = req.body;
@@ -34,42 +34,33 @@ app.post("/plan", async (req, res) => {
     const prompt = `
 Jesteś lokalnym przewodnikiem po Wrocławiu.
 
-Tworzysz JEDEN SPÓJNY PLAN DNIA jak doświadczenie.
+Tworzysz UNIKALNY plan dnia (6-7 punktów).
 
 STYL: ${styl}
 
-ZASADY:
-- tylko REALNE miejsca
-- zero losowych rzeczy typu "informacja turystyczna"
-- plan ma mieć klimat i sens
-- każde miejsce ma wynikać z poprzedniego
-- ma to być coś co zrobi efekt "wow"
+WAŻNE:
+- mieszaj znane i mniej znane miejsca
+- unikaj powtarzalnych punktów
+- zero rzeczy typu urząd, informacja turystyczna
 
 KAŻDY PUNKT:
-- nazwa miejsca
-- ciekawostka / historia / co tam robić
-- czas dojścia (np. 8 min pieszo)
-
-FLOW:
-10:00 start (kawa / klimat)
-12:00 atrakcja
-14:00 jedzenie
-16:00 atrakcja
-18:00 kolacja
-20:00 spacer / klimat
-22:00 opcjonalnie coś wieczornego
-
-STYL:
-- leniwy → centrum, mało chodzenia
-- aktywny → więcej chodzenia + mniej oczywiste miejsca + widoki / natura
-- romantyczny → klimat, spacery, kolacja
+- nazwa
+- ciekawostka / historia
+- czas dojścia
+- czas pobytu
+- godziny otwarcia
+- współrzędne (lat, lon)
 
 FORMAT JSON:
 [
   {
     "miejsce": "nazwa",
-    "opis": "opis z ciekawostką",
-    "czas": "10 min pieszo"
+    "opis": "opis",
+    "czas": "10 min pieszo",
+    "czas_pobytu": "45 min",
+    "godziny": "10:00–22:00",
+    "lat": 51.1,
+    "lon": 17.0
   }
 ]
 `;
@@ -93,19 +84,7 @@ FORMAT JSON:
 
     try {
       plan = JSON.parse(text);
-    } catch {
-      plan = [];
-    }
-
-    if (!plan.length) {
-      plan = [
-        {
-          miejsce: "Rynek Wrocław",
-          opis: "Jedno z największych rynków w Europie z gotyckim ratuszem.",
-          czas: "start"
-        }
-      ];
-    }
+    } catch {}
 
     res.json({ list: plan, weather });
 

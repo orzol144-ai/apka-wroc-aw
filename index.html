@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <title>Plan dnia</title>
 
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
 <style>
 body {
   margin:0;
@@ -29,6 +31,12 @@ body {
   padding:15px;
   border-radius:15px;
 }
+
+#map {
+  height:300px;
+  margin-top:20px;
+  border-radius:15px;
+}
 </style>
 </head>
 
@@ -44,48 +52,87 @@ body {
   <option value="romantyczny">❤️ Romantyczny</option>
 </select>
 
-<button onclick="start()">🚀 Generuj plan</button>
+<button onclick="start()">🚀 Generuj</button>
 
 <div id="app"></div>
+<div id="map"></div>
 
 </div>
 
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
 <script>
 
+let map;
+let markers = [];
+let line;
+
+function initMap() {
+  if (!map) {
+    map = L.map('map').setView([51.11, 17.03], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+  }
+}
+
+function clearMap() {
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+  if (line) map.removeLayer(line);
+}
+
 async function start() {
+  document.getElementById("app").innerHTML = "⏳ Tworzę...";
+
   const styl = document.getElementById("styl").value;
 
-  document.getElementById("app").innerHTML = "⏳ Tworzę plan...";
+  const res = await fetch("/plan", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ styl })
+  });
 
-  try {
-    const res = await fetch("/plan", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ styl })
-    });
+  const data = await res.json();
 
-    const data = await res.json();
+  initMap();
+  clearMap();
 
-    let html = "<h3>🔥 Twój dzień</h3>";
+  let html = "<h3>🔥 Twój dzień</h3>";
 
-    let hour = 10;
+  let hour = 10;
+  let coords = [];
 
-    data.list.forEach(item => {
-      html += `
-        <div class="card">
-          <h4>${hour}:00 — ${item.miejsce}</h4>
-          <p>${item.opis}</p>
-          <p>🚶 ${item.czas}</p>
-        </div>
-      `;
-      hour += 2;
-    });
+  data.list.forEach(item => {
 
-    document.getElementById("app").innerHTML = html;
+    html += `
+      <div class="card">
+        <h4>${hour}:00 — ${item.miejsce}</h4>
+        <p>${item.opis}</p>
+        <p>🚶 ${item.czas}</p>
+        <p>⏱️ ${item.czas_pobytu}</p>
+        <p>🕒 ${item.godziny}</p>
+      </div>
+    `;
 
-  } catch {
-    document.getElementById("app").innerHTML = "❌ Błąd";
+    if (item.lat && item.lon) {
+      const marker = L.marker([item.lat, item.lon]).addTo(map)
+        .bindPopup(item.miejsce);
+      markers.push(marker);
+      coords.push([item.lat, item.lon]);
+    }
+
+    hour += 2;
+  });
+
+  // 🔥 LINIA TRASY
+  if (coords.length > 1) {
+    line = L.polyline(coords).addTo(map);
+    map.fitBounds(line.getBounds());
   }
+
+  document.getElementById("app").innerHTML = html;
 }
 
 </script>
