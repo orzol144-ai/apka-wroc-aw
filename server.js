@@ -28,40 +28,74 @@ async function askAI(prompt) {
   return data.output[0].content[0].text;
 }
 
-// 🔥 GENERATOR OPCJI (NIE PLANU!)
 app.post("/plan", async (req, res) => {
   const { styl } = req.body;
 
   const prompt = `
-Stwórz LISTĘ 10-12 propozycji miejsc we Wrocławiu dla stylu: ${styl}
+Stwórz plan dnia we Wrocławiu.
 
-Zwróć JSON:
-
-[
-  {
-    "miejsce": "Nazwa miejsca",
-    "opis": "ciekawy opis + ciekawostka historyczna",
-    "typ": "kawiarnia / atrakcja / jedzenie"
-  }
-]
+STYL: ${styl}
 
 ZASADY:
-- różnorodne miejsca
-- konkretne nazwy
-- ciekawostki (rok, historia, unikalność)
-- bez powtórek
-- styl luźny
+- 6 punktów
+- logiczna trasa (blisko siebie!)
+- każdy kolejny punkt ma odniesienie do poprzedniego
+
+DOPASOWANIE:
+- leniwy → max 10 minut pieszo między punktami
+- romantyczny → klimat + kolacja + spacery
+- aktywny → mix ruch + jedzenie + atrakcje (NIE same sporty!)
+
+KAŻDY PUNKT MUSI MIEĆ:
+
+10:00 – NAZWA MIEJSCA
+Opis (ciekawostka + klimat)
+Dojście: X min pieszo LUB tramwaj X (skąd → dokąd)
+
+WAŻNE:
+- NIE używaj gwiazdek **
+- NIE używaj słowa undefined
+- ZAWSZE dodaj "Dojście:"
+- każde miejsce REALNE (np Rynek, Ostrów Tumski, Hala Targowa itd.)
 `;
 
   try {
-    const raw = await askAI(prompt);
-    const parsed = JSON.parse(raw);
+    let wynik = await askAI(prompt);
 
-    res.json({ list: parsed });
+    // 🔥 Fallback jak GPT coś odwali
+    if (!wynik || wynik.length < 100) {
+      wynik = `
+10:00 – Rynek Wrocław
+Serce miasta z kolorowymi kamienicami i Ratuszem. Jedno z największych rynków w Europie.
+Dojście: start w centrum
 
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "Błąd AI" });
+11:30 – Ostrów Tumski
+Najstarsza część miasta, znana z klimatycznych latarni gazowych zapalanych ręcznie.
+Dojście: 10 min pieszo z Rynku
+
+13:00 – Hala Targowa
+Miejsce pełne lokalnego jedzenia i klimatu starego Wrocławia.
+Dojście: 5 min pieszo
+
+14:30 – Panorama Racławicka
+Ogromne malowidło historyczne robiące mega wrażenie.
+Dojście: 10 min pieszo
+
+16:00 – Bulwary nad Odrą
+Idealne miejsce na chill i spacer przy wodzie.
+Dojście: 8 min pieszo
+
+18:00 – Kolacja – Bernard
+Tradycyjna kuchnia w klimatycznym wnętrzu przy Rynku.
+Dojście: 12 min pieszo
+`;
+    }
+
+    res.json({ wynik });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Błąd" });
   }
 });
 
