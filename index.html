@@ -81,40 +81,40 @@ button {
 
 <script>
 let data = {};
-let tryb = "plan"; // 🔥 ważne
 
 async function start(){
-  tryb = "plan";
+  const styl = document.getElementById("styl").value;
+  const transport = document.getElementById("transport").value;
 
-  const styl = stylEl.value;
-  const transport = transportEl.value;
+  document.getElementById("app").innerHTML = "⏳ Generuję...";
 
-  app.innerHTML = "⏳ Generuję...";
+  try {
+    const res = await fetch("/plan",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ styl, transport })
+    });
 
-  const res = await fetch("/plan",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({ styl, transport })
-  });
+    data = await res.json();
 
-  data = await res.json();
+    pokazPlan();
 
-  pokazPlan();
+  } catch(e){
+    document.getElementById("app").innerHTML = "❌ Błąd połączenia";
+  }
 }
 
-// 🔥 RESET zamiast nakładania
 function glodny(){
-  tryb = "food";
   pokazListe("jedzenie");
 }
 
 function zmeczony(){
-  tryb = "chill";
   pokazListe("spacer");
 }
 
-// 🔥 lista zamiast swipe (czytelniej)
 function pokazListe(kategoria){
+  const app = document.getElementById("app");
+
   app.innerHTML = `<h3>${kategoria}</h3>`;
 
   const lista = data[kategoria] || [];
@@ -133,8 +133,9 @@ function pokazListe(kategoria){
   });
 }
 
-// 🔥 FINALNY PLAN (bez duplikatów)
 function pokazPlan(){
+  const app = document.getElementById("app");
+
   app.innerHTML = "<h3>🔥 Plan dnia</h3>";
 
   ["kawa","spacer","jedzenie","atrakcja"].forEach(k=>{
