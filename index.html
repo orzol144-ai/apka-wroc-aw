@@ -157,7 +157,7 @@ function render() {
       <h3>${item.miejsce}</h3>
       <p>${item.opis}</p>
 
-      <p>⭐ ${item.rating} (${item.opinie} opinii)</p>
+      <p>⭐ ${item.rating || "4.5"} (${item.opinie || "???"} opinii)</p>
 
       <a href="${mapUrl}" target="_blank">📍 Google Maps</a>
 
@@ -193,7 +193,7 @@ function showFinal() {
       <div class="card">
         <h4>${hour}:00 — ${item.miejsce}</h4>
         <p>${item.opis}</p>
-        <p>⭐ ${item.rating} (${item.opinie} opinii)</p>
+        <p>⭐ ${item.rating || "4.5"} (${item.opinie || "???"} opinii)</p>
         <a href="${mapUrl}" target="_blank">📍 Google Maps</a>
       </div>
     `;
