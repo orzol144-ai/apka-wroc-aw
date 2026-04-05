@@ -8,57 +8,55 @@
 body {
   margin:0;
   font-family: Arial;
-  background: linear-gradient(135deg,#1e1e2f,#3a2f63);
+  background: linear-gradient(135deg,#1e1e2f,#3b3b6d);
   color:white;
   display:flex;
   justify-content:center;
+  padding:20px;
 }
 
 .box {
-  width:95%;
-  max-width:420px;
-  margin-top:20px;
-  background:#1f1f2e;
+  background:#2a2a3d;
   padding:20px;
   border-radius:20px;
+  width:100%;
+  max-width:400px;
+  text-align:center;
 }
 
-button, select {
+select, button {
   width:100%;
-  padding:12px;
   margin-top:10px;
+  padding:12px;
+  border-radius:12px;
   border:none;
-  border-radius:10px;
+  font-size:16px;
 }
 
 button {
-  background: linear-gradient(135deg,#667eea,#764ba2);
+  background:linear-gradient(135deg,#667eea,#764ba2);
   color:white;
-  font-weight:bold;
-}
-
-.quick {
-  display:flex;
-  gap:10px;
+  cursor:pointer;
 }
 
 .card {
-  background:#2a2a3a;
+  margin-top:20px;
+  background:#1f1f2e;
   padding:15px;
-  margin-top:15px;
   border-radius:15px;
-  position:relative;
+  text-align:left;
 }
 
 .nav {
   display:flex;
-  justify-content:space-between;
-  margin-top:10px;
+  gap:10px;
+  margin-top:15px;
 }
 
 .nav button {
-  width:48%;
+  flex:1;
 }
+
 </style>
 </head>
 
@@ -69,14 +67,14 @@ button {
 <h2>📍 Plan dnia</h2>
 
 <select id="styl">
-<option value="leniwy">😴</option>
-<option value="aktywny">🏃</option>
-<option value="romantyczny">❤️</option>
+  <option value="leniwy">😴 Leniwy</option>
+  <option value="aktywny">🏃 Aktywny</option>
+  <option value="romantyczny">❤️ Romantyczny</option>
 </select>
 
 <select id="transport">
-<option value="pieszo">🚶</option>
-<option value="auto">🚗</option>
+  <option value="pieszo">🚶 Pieszo</option>
+  <option value="auto">🚗 Auto</option>
 </select>
 
 <button onclick="start()">🚀 Start</button>
@@ -86,6 +84,7 @@ button {
 </div>
 
 <script>
+
 let plan = [];
 let currentIndex = 0;
 
@@ -106,7 +105,12 @@ async function start() {
 
     const data = await res.json();
 
-    console.log("PLAN:", data);
+    console.log(data);
+
+    if (!data.plan) {
+      document.getElementById("app").innerHTML = "❌ Brak danych";
+      return;
+    }
 
     plan = data.plan;
     currentIndex = 0;
@@ -115,14 +119,14 @@ async function start() {
 
   } catch (e) {
     console.error(e);
-    document.getElementById("app").innerHTML = "❌ Błąd";
+    document.getElementById("app").innerHTML = "❌ Błąd serwera";
   }
 }
 
 function render() {
   const app = document.getElementById("app");
 
-  if (!plan || plan.length === 0) {
+  if (!plan.length) {
     app.innerHTML = "Brak planu";
     return;
   }
@@ -135,7 +139,7 @@ function render() {
       <p>${item.opis}</p>
       <p>🚶 ${item.dojscie}</p>
 
-      <div style="margin-top:15px;">
+      <div class="nav">
         <button onclick="prev()">⬅️</button>
         <button onclick="next()">➡️</button>
         <button onclick="remove()">❌</button>
@@ -166,65 +170,6 @@ function remove() {
   }
 
   render();
-}
-</script>
-
-// 🎯 RENDER
-function render(){
-  const app = document.getElementById("app");
-  app.innerHTML = "<h3>🔥 Plan dnia</h3>";
-
-  slots.forEach((slot,i)=>{
-    const txt = slot[current[i]].trim();
-
-    const name = txt.split("–")[0] || "Miejsce";
-    const map = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`;
-
-    app.innerHTML += `
-      <div class="card">
-
-        <button onclick="usun(this)" style="
-        position:absolute;
-        top:10px;
-        right:10px;
-        background:none;
-        color:#ff6b6b;
-        font-size:18px;
-        border:none;">✖</button>
-
-        <b>${name}</b><br><br>
-        ${txt}<br><br>
-
-        <a href="${map}" target="_blank">📍 Mapy</a>
-
-        <div class="nav">
-          <button onclick="prev(${i})">⬅️</button>
-          <button onclick="next(${i})">➡️</button>
-        </div>
-
-      </div>
-    `;
-  });
-}
-
-// 👉 SWIPE
-function next(i){
-  if(current[i] < slots[i].length-1){
-    current[i]++;
-    render();
-  }
-}
-
-function prev(i){
-  if(current[i] > 0){
-    current[i]--;
-    render();
-  }
-}
-
-// ❌ USUŃ
-function usun(btn){
-  btn.parentElement.remove();
 }
 
 </script>
