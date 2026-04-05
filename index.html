@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <title>Plan dnia</title>
 
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
 <style>
 body {
   margin:0;
@@ -47,7 +49,6 @@ button, select {
 
 .actions button {
   flex:1;
-  font-size:18px;
 }
 </style>
 </head>
@@ -68,9 +69,12 @@ button, select {
 
 <div id="app"></div>
 
+<div id="map" style="height:300px; margin-top:20px; border-radius:15px;"></div>
+
 </div>
 
-<!-- 🔥 TO MUSI BYĆ NA DOLE I W CAŁOŚCI -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
 <script>
 
 let list = [];
@@ -78,11 +82,44 @@ let index = 0;
 let finalPlan = [];
 let weatherData = null;
 
+let map;
+let markers = [];
+
+// MAPA
+function initMap() {
+  map = L.map('map').setView([51.11, 17.03], 13);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
+}
+
+function clearMarkers() {
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+}
+
+async function addMarker(place) {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(place + " Wrocław")}`);
+    const data = await res.json();
+
+    if (!data[0]) return;
+
+    const marker = L.marker([data[0].lat, data[0].lon]).addTo(map)
+      .bindPopup(place);
+
+    markers.push(marker);
+
+  } catch {}
+}
+
+// START
 async function start() {
   try {
-    const styl = document.getElementById("styl").value;
-
     document.getElementById("app").innerHTML = "⏳ Generuję...";
+
+    const styl = document.getElementById("styl").value;
 
     const res = await fetch("/plan", {
       method:"POST",
@@ -102,37 +139,34 @@ async function start() {
     finalPlan = [];
     weatherData = data.weather || {};
 
+    initMap();
+    clearMarkers();
+
     render();
 
-  } catch (err) {
-    console.error(err);
-    document.getElementById("app").innerHTML = "❌ Błąd aplikacji";
+  } catch {
+    document.getElementById("app").innerHTML = "❌ Błąd";
   }
 }
 
+// RENDER
 function render() {
   const app = document.getElementById("app");
 
-  if (index >= list.length) {
-    return showFinal();
-  }
+  if (index >= list.length) return showFinal();
 
   const item = list[index];
 
-  const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.miejsce || "")}`;
+  const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.miejsce)}`;
 
   app.innerHTML = `
-    <div style="margin-bottom:10px;font-size:14px;">
-      🌦️ ${weatherData?.temp ?? "?"}°C
-    </div>
+    <div>🌦️ ${weatherData?.temp ?? "?"}°C</div>
 
     <div class="card">
-      <h3>${item.miejsce || "Brak nazwy"}</h3>
-      <p>${item.opis || ""}</p>
+      <h3>${item.miejsce}</h3>
+      <p>${item.opis}</p>
 
-      <a href="${mapUrl}" target="_blank">
-        📍 Otwórz mapę
-      </a>
+      <a href="${mapUrl}" target="_blank">📍 Google Maps</a>
 
       <div class="actions">
         <button onclick="reject()">👎</button>
@@ -142,7 +176,9 @@ function render() {
   `;
 }
 
+// AKCJE
 function accept() {
+  addMarker(list[index].miejsce);
   finalPlan.push(list[index]);
   index++;
   render();
@@ -153,30 +189,25 @@ function reject() {
   render();
 }
 
+// FINAL
 function showFinal() {
   let html = "<h3>🔥 Twój plan dnia</h3>";
 
   let hour = 10;
 
   finalPlan.forEach(item => {
-    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.miejsce || "")}`;
+    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.miejsce)}`;
 
     html += `
       <div class="card">
         <h4>${hour}:00 — ${item.miejsce}</h4>
         <p>${item.opis}</p>
-        <a href="${mapUrl}" target="_blank">
-          📍 Otwórz mapę
-        </a>
+        <a href="${mapUrl}" target="_blank">📍 Google Maps</a>
       </div>
     `;
 
     hour += 2;
   });
-
-  if (!finalPlan.length) {
-    html += "<p>❌ Nic nie wybrałeś</p>";
-  }
 
   document.getElementById("app").innerHTML = html;
 }

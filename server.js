@@ -7,17 +7,17 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔥 NAJPROSTSZY I NAJPEWNIEJSZY ROOT
+// ROOT
 app.get("/", (req, res) => {
   res.sendFile(path.resolve("index.html"));
 });
 
-// 🔥 TEST
+// TEST
 app.get("/test", (req, res) => {
   res.send("OK");
 });
 
-// 🔥 AI
+// AI
 async function askAI(prompt) {
   try {
     const res = await fetch("https://api.openai.com/v1/responses", {
@@ -34,13 +34,12 @@ async function askAI(prompt) {
 
     const data = await res.json();
     return data.output?.[0]?.content?.[0]?.text || "";
-  } catch (e) {
-    console.error("AI ERROR:", e);
+  } catch {
     return "";
   }
 }
 
-// 🌦️ POGODA
+// POGODA
 async function getWeather() {
   try {
     const res = await fetch(
@@ -56,13 +55,12 @@ async function getWeather() {
   }
 }
 
-// 🔥 PARSER
+// PARSER
 function parsePlan(text) {
   if (!text) return [];
 
   return text.split("\n\n").map(block => {
     const lines = block.split("\n");
-
     const miejsce = (lines[0]?.split("–")[1] || "").trim();
     const opis = lines.slice(1).join(" ").trim();
 
@@ -70,7 +68,7 @@ function parsePlan(text) {
   }).filter(x => x.miejsce && x.opis);
 }
 
-// 🚀 API
+// API
 app.post("/plan", async (req, res) => {
   try {
     const { styl } = req.body;
@@ -83,7 +81,7 @@ Plan dnia Wrocław.
 STYL: ${styl}
 POGODA: ${weather.temp}°C
 
-10 miejsc. Mix atrakcji, jedzenia, kawiarni.
+10 miejsc. Mix: restauracje, kawiarnie, atrakcje.
 
 FORMAT:
 10:00 – NAZWA
