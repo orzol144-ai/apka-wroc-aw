@@ -33,7 +33,7 @@ async function getWeather() {
   }
 }
 
-// 🔥 REALNE MIEJSCA (Overpass)
+// 🔥 REALNE MIEJSCA
 async function getPlaces(type) {
   const query = `
   [out:json];
@@ -57,15 +57,85 @@ async function getPlaces(type) {
       .slice(0, 10)
       .map(p => ({
         miejsce: p.tags.name,
-        opis: "Popularne miejsce we Wrocławiu",
+        opis: "",
         lat: p.lat,
         lon: p.lon,
         rating: (Math.random() * 1.5 + 3.5).toFixed(1)
       }));
 
-  } catch (e) {
-    console.log("Overpass error:", e);
+  } catch {
     return [];
+  }
+}
+
+// 🧠 AI OPISY + OPINIE
+async function enrichPlacesWithAI(places) {
+  try {
+    const prompt = `
+Dla każdej nazwy miejsca stwórz krótki, ciekawy opis.
+
+Zasady:
+- 1-2 zdania
+- ciekawostka / klimat / unikalność
+- restauracja → jedzenie
+- kawiarnia → klimat
+- miejsce historyczne → historia
+
+DODAJ:
+- realistyczną liczbę opinii
+
+Zwróć JSON:
+[
+  {
+    "miejsce": "nazwa",
+    "opis": "opis",
+    "opinie": 1234
+  }
+]
+
+Miejsca:
+${places.map(p => p.miejsce).join("\n")}
+`;
+
+    const res = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "gpt-4.1-mini",
+        input: prompt
+      })
+    });
+
+    const data = await res.json();
+    const text = data.output?.[0]?.content?.[0]?.text || "[]";
+
+    let parsed = [];
+
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      parsed = [];
+    }
+
+    return places.map(p => {
+      const found = parsed.find(x => x.miejsce === p.miejsce);
+
+      return {
+        ...p,
+        opis: found?.opis || "Ciekawe miejsce warte odwiedzenia.",
+        opinie: found?.opinie || Math.floor(Math.random()*2000+200)
+      };
+    });
+
+  } catch {
+    return places.map(p => ({
+      ...p,
+      opis: "Ciekawe miejsce warte odwiedzenia.",
+      opinie: Math.floor(Math.random()*2000+200)
+    }));
   }
 }
 
@@ -83,13 +153,16 @@ app.post("/plan", async (req, res) => {
 
     let places = await getPlaces(type);
 
-    // fallback jak API padnie
+    // fallback
     if (!places.length) {
       places = [
-        { miejsce: "Rynek Wrocław", opis: "Centrum miasta", rating: "4.7" },
-        { miejsce: "Ostrów Tumski", opis: "Spacer i klimat", rating: "4.8" }
+        { miejsce: "Rynek Wrocław", lat: 51.109, lon: 17.032 },
+        { miejsce: "Ostrów Tumski", lat: 51.114, lon: 17.046 }
       ];
     }
+
+    // 🔥 AI enrichment
+    places = await enrichPlacesWithAI(places);
 
     res.json({ list: places, weather });
 

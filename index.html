@@ -85,7 +85,6 @@ let weatherData = null;
 let map;
 let markers = [];
 
-// MAPA
 function initMap() {
   map = L.map('map').setView([51.11, 17.03], 13);
 
@@ -108,7 +107,6 @@ function addMarker(item) {
   markers.push(marker);
 }
 
-// START
 async function start() {
   try {
     document.getElementById("app").innerHTML = "⏳ Generuję...";
@@ -143,7 +141,6 @@ async function start() {
   }
 }
 
-// RENDER
 function render() {
   const app = document.getElementById("app");
 
@@ -160,7 +157,7 @@ function render() {
       <h3>${item.miejsce}</h3>
       <p>${item.opis}</p>
 
-      <p>⭐ ${item.rating}</p>
+      <p>⭐ ${item.rating} (${item.opinie} opinii)</p>
 
       <a href="${mapUrl}" target="_blank">📍 Google Maps</a>
 
@@ -172,7 +169,6 @@ function render() {
   `;
 }
 
-// AKCJE
 function accept() {
   addMarker(list[index]);
   finalPlan.push(list[index]);
@@ -185,7 +181,6 @@ function reject() {
   render();
 }
 
-// FINAL
 function showFinal() {
   let html = "<h3>🔥 Twój plan dnia</h3>";
 
@@ -198,7 +193,7 @@ function showFinal() {
       <div class="card">
         <h4>${hour}:00 — ${item.miejsce}</h4>
         <p>${item.opis}</p>
-        <p>⭐ ${item.rating}</p>
+        <p>⭐ ${item.rating} (${item.opinie} opinii)</p>
         <a href="${mapUrl}" target="_blank">📍 Google Maps</a>
       </div>
     `;
