@@ -25,21 +25,19 @@ async function getWeather() {
     );
     const data = await res.json();
 
-    return {
-      temp: data.current_weather?.temperature || 15
-    };
+    return { temp: data.current_weather?.temperature || 15 };
   } catch {
     return { temp: 15 };
   }
 }
 
-// 🔥 REALNE MIEJSCA + TYP
+// 🔥 LEPSZE MIEJSCA (FILTER + TYP)
 async function getPlaces(type) {
   const query = `
   [out:json];
   area["name"="Wrocław"]->.searchArea;
   (
-    node["amenity"~"${type}|restaurant|cafe|bar|fast_food"](area.searchArea);
+    node["amenity"~"${type}|restaurant|cafe|fast_food"](area.searchArea);
   );
   out body;
   `;
@@ -54,29 +52,27 @@ async function getPlaces(type) {
 
     return data.elements
       .filter(p => p.tags && p.tags.name)
-      .slice(0, 25)
-      .map(p => {
-        let typ = "attraction";
-
-        if (["restaurant", "fast_food"].includes(p.tags.amenity)) typ = "food";
-        if (["cafe", "bar"].includes(p.tags.amenity)) typ = "coffee";
-
-        return {
-          miejsce: p.tags.name,
-          opis: "",
-          lat: p.lat,
-          lon: p.lon,
-          typ,
-          rating: (Math.random() * 1.5 + 3.5).toFixed(1)
-        };
-      });
+      .filter(p => p.tags.name.length > 3)
+      .slice(0, 30)
+      .map(p => ({
+        miejsce: p.tags.name,
+        lat: p.lat,
+        lon: p.lon,
+        typ:
+          ["restaurant", "fast_food"].includes(p.tags.amenity)
+            ? "food"
+            : p.tags.amenity === "cafe"
+            ? "coffee"
+            : "attraction",
+        rating: (Math.random() * 1.5 + 3.5).toFixed(1)
+      }));
 
   } catch {
     return [];
   }
 }
 
-// 🔥 UKŁADANIE LOGICZNEGO DNIA
+// 🔥 LOGICZNY FLOW DNIA
 function buildSmartFlow(places) {
   const food = places.filter(p => p.typ === "food");
   const coffee = places.filter(p => p.typ === "coffee");
@@ -84,38 +80,36 @@ function buildSmartFlow(places) {
 
   const result = [];
 
-  // start: atrakcje
-  result.push(...attr.slice(0, 2));
+  result.push(...attr.slice(0, 2)); // start
 
-  // potem kawa
   if (coffee[0]) result.push(coffee[0]);
 
-  // potem atrakcja
-  if (attr[2]) result.push(attr[2]);
+  result.push(...attr.slice(2, 4));
 
-  // potem jedzenie
   if (food[0]) result.push(food[0]);
 
-  // potem mix
-  result.push(...attr.slice(3, 5));
   if (coffee[1]) result.push(coffee[1]);
+
   if (food[1]) result.push(food[1]);
 
-  return result.slice(0, 10);
+  return result.slice(0, 8);
 }
 
-// 🧠 AI OPISY
+// 🧠 AI OPIS (REALISTYCZNY)
 async function enrichPlacesWithAIStyled(places, styl) {
   try {
     const prompt = `
-Opisz miejsca w stylu: ${styl}
+Opisz miejsca REALISTYCZNIE.
 
 Zasady:
-- 1-2 zdania
-- ciekawostka / klimat / unikalność
+- 1 zdanie
+- bez wymyślania bajek
+- konkretnie
 
-DODAJ:
-- realistyczną liczbę opinii
+Styl: ${styl}
+
+Dodaj:
+- liczba opinii
 
 JSON:
 [
@@ -155,8 +149,7 @@ ${places.map(p => p.miejsce).join("\n")}
 
       return {
         ...p,
-        rating: p.rating || (Math.random()*1.5+3.5).toFixed(1),
-        opis: found?.opis || "Ciekawe miejsce warte odwiedzenia.",
+        opis: found?.opis || "Miejsce warte odwiedzenia.",
         opinie: found?.opinie || Math.floor(Math.random()*2000+200)
       };
     });
@@ -173,19 +166,22 @@ app.post("/plan", async (req, res) => {
 
     const weather = await getWeather();
 
-    let types = ["cafe", "restaurant", "fast_food"];
-
     let allPlaces = [];
 
-    for (let t of types) {
+    const baseTypes =
+      styl === "aktywny"
+        ? ["fast_food", "restaurant"]
+        : styl === "romantyczny"
+        ? ["restaurant", "cafe"]
+        : ["cafe"];
+
+    for (let t of baseTypes) {
       const places = await getPlaces(t);
       allPlaces = allPlaces.concat(places);
     }
 
-    // shuffle
     allPlaces.sort(() => Math.random() - 0.5);
 
-    // 🔥 SMART FLOW
     let places = buildSmartFlow(allPlaces);
 
     if (!places.length) {
@@ -195,7 +191,6 @@ app.post("/plan", async (req, res) => {
       ];
     }
 
-    // AI opis
     places = await enrichPlacesWithAIStyled(places, styl);
 
     res.json({ list: places, weather });
