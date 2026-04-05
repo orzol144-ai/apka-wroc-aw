@@ -26,72 +26,91 @@ async function askAI(prompt) {
   });
 
   const data = await response.json();
-  return data.output[0].content[0].text;
+  return data.output?.[0]?.content?.[0]?.text || "";
 }
 
 app.post("/plan", async (req, res) => {
   const { styl, transport } = req.body;
 
   const prompt = `
-Stwórz plan dnia we Wrocławiu.
+Plan dnia Wrocław.
 
 Styl: ${styl}
 Transport: ${transport}
 
-ZWRÓĆ JSON:
+JSON:
 
 {
-  "kawa": [{ "time": "10:00", "name": "", "opis": "", "dojazd": "" }],
-  "jedzenie": [{ "time": "13:00", "name": "", "opis": "", "dojazd": "" }],
-  "spacer": [{ "time": "11:30", "name": "", "opis": "", "dojazd": "" }],
-  "atrakcja": [{ "time": "15:00", "name": "", "opis": "", "dojazd": "" }]
+ "kawa": [],
+ "jedzenie": [],
+ "spacer": [],
+ "atrakcja": []
 }
 
-WAŻNE:
-- GODZINY OBOWIĄZKOWO (10:00, 11:30 itd.)
-- plan ma mieć logiczny ciąg dnia
-- miejsca blisko siebie (max 10-15 min)
-- konkretne miejsca Wrocław
+WARUNKI:
+- MINIMUM 5 opcji w każdej kategorii
+- miejsca BLISKO siebie
+- logiczna trasa
+- godziny obowiązkowe
 
 OPIS:
-- 2–3 zdania
-- zawiera ciekawostkę
-- konkretny klimat
+- 2-3 zdania
+- ciekawostka
+- konkrety
 
 DOJAZD:
-- konkretnie: pieszo / tramwaj + ile minut
+- pieszo / tramwaj / auto + czas
 
-Każda kategoria min 3 opcje
+ZWROT tylko JSON
 `;
 
   try {
     let text = await askAI(prompt);
 
-    text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    text = text.replace(/```json/g,"").replace(/```/g,"").trim();
 
-    const parsed = JSON.parse(text);
+    let parsed;
 
-    // 🔥 fallback godzin (gdyby AI się wywaliło)
-    const godziny = ["10:00","11:30","13:00","15:00"];
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      parsed = {
+        kawa: [],
+        jedzenie: [],
+        spacer: [],
+        atrakcja: []
+      };
+    }
 
-    Object.keys(parsed).forEach((kategoria, i) => {
-      parsed[kategoria].forEach(item => {
-        if(!item.time || item.time.length < 4){
-          item.time = godziny[i];
-        }
+    // 🔥 fallback jeśli AI coś spartoli
+    const godziny = ["10:00","11:30","13:00","15:00","17:00"];
+
+    Object.keys(parsed).forEach((k,i)=>{
+      if(!parsed[k] || parsed[k].length < 3){
+        parsed[k] = [{
+          time: godziny[i],
+          name: "Rynek Wrocław",
+          opis: "Centralne miejsce miasta pełne życia i historii. To tutaj krzyżują się wszystkie klimaty Wrocławia.",
+          dojazd: "centrum, wszędzie blisko"
+        }];
+      }
+
+      parsed[k].forEach((item,idx)=>{
+        if(!item.time) item.time = godziny[idx] || "12:00";
       });
     });
 
     res.json(parsed);
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Błąd AI" });
+    res.json({
+      kawa: [],
+      jedzenie: [],
+      spacer: [],
+      atrakcja: []
+    });
   }
 });
 
 const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log("Serwer działa na porcie " + PORT);
-});
+app.listen(PORT);

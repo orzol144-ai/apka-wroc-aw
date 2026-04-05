@@ -9,22 +9,21 @@ body {
   margin:0;
   font-family: Arial;
   background: linear-gradient(135deg,#1e1e2f,#3a2f63);
-  min-height:100vh;
+  color:white;
   display:flex;
   justify-content:center;
-  color:white;
 }
 
 .box {
   width:95%;
   max-width:420px;
-  background:#1f1f2e;
   margin-top:20px;
-  border-radius:20px;
+  background:#1f1f2e;
   padding:20px;
+  border-radius:20px;
 }
 
-select, button {
+button, select {
   width:100%;
   padding:12px;
   margin-top:10px;
@@ -35,7 +34,6 @@ select, button {
 button {
   background: linear-gradient(135deg,#667eea,#764ba2);
   color:white;
-  font-weight:bold;
 }
 
 .quick {
@@ -43,33 +41,11 @@ button {
   gap:10px;
 }
 
-.quick button {
-  flex:1;
-}
-
 .card {
   background:#2a2a3a;
-  padding:18px;
-  border-radius:15px;
+  padding:15px;
   margin-top:15px;
-  line-height:1.5;
-}
-
-.actions {
-  display:flex;
-  gap:10px;
-}
-
-.actions button {
-  flex:1;
-}
-
-.map-btn {
-  background:#444;
-}
-
-.save-btn {
-  background:#28a745;
+  border-radius:15px;
 }
 </style>
 </head>
@@ -81,25 +57,23 @@ button {
 <h2>📍 Plan dnia</h2>
 
 <select id="styl">
-  <option value="leniwy">😴 Leniwy</option>
-  <option value="aktywny">🏃 Aktywny</option>
-  <option value="romantyczny">❤️ Romantyczny</option>
+<option value="leniwy">😴 Leniwy</option>
+<option value="aktywny">🏃 Aktywny</option>
+<option value="romantyczny">❤️ Romantyczny</option>
 </select>
 
 <select id="transport">
-  <option value="pieszo">🚶 Pieszo</option>
-  <option value="komunikacja">🚋 Komunikacja</option>
-  <option value="auto">🚗 Auto</option>
+<option value="pieszo">🚶 Pieszo</option>
+<option value="komunikacja">🚋 Komunikacja</option>
+<option value="auto">🚗 Auto</option>
 </select>
 
-<button onclick="start()">🚀 Generuj plan</button>
+<button onclick="start()">🚀 Start</button>
 
 <div class="quick">
-  <button onclick="glodny()">🍔 Głodny</button>
-  <button onclick="zmeczony()">😴 Odpoczynek</button>
+<button onclick="glodny()">🍔 Głodny</button>
+<button onclick="zmeczony()">😴 Odpoczynek</button>
 </div>
-
-<button onclick="pokazZapisane()">📂 Zapisane</button>
 
 <div id="app"></div>
 
@@ -107,17 +81,15 @@ button {
 
 <script>
 let data = {};
-let sloty = ["kawa","jedzenie","spacer","atrakcja"];
-let currentSlot = 0;
-let index = 0;
-let wybrane = [];
-let startX = 0;
+let tryb = "plan"; // 🔥 ważne
 
 async function start(){
-  const styl = document.getElementById("styl").value;
-  const transport = document.getElementById("transport").value;
+  tryb = "plan";
 
-  document.getElementById("app").innerHTML = "⏳ Generuję plan...";
+  const styl = stylEl.value;
+  const transport = transportEl.value;
+
+  app.innerHTML = "⏳ Generuję...";
 
   const res = await fetch("/plan",{
     method:"POST",
@@ -127,137 +99,59 @@ async function start(){
 
   data = await res.json();
 
-  currentSlot = 0;
-  index = 0;
-  wybrane = [];
-
-  pokaz();
+  pokazPlan();
 }
 
-// 🔥 DZIAŁA TERAZ
+// 🔥 RESET zamiast nakładania
 function glodny(){
-  if(!data.jedzenie) return;
-  currentSlot = sloty.indexOf("jedzenie");
-  index = 0;
-  pokaz();
+  tryb = "food";
+  pokazListe("jedzenie");
 }
 
 function zmeczony(){
-  if(!data.spacer) return;
-  currentSlot = sloty.indexOf("spacer");
-  index = 0;
-  pokaz();
+  tryb = "chill";
+  pokazListe("spacer");
 }
 
-function pokaz(){
-  const app = document.getElementById("app");
+// 🔥 lista zamiast swipe (czytelniej)
+function pokazListe(kategoria){
+  app.innerHTML = `<h3>${kategoria}</h3>`;
 
-  const slot = sloty[currentSlot];
-  const lista = data[slot];
+  const lista = data[kategoria] || [];
 
-  if(!lista){
-    app.innerHTML = "❌ Brak danych";
-    return;
-  }
-
-  const item = lista[index];
-
-  const mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`;
-
-  app.innerHTML = `
-    <h3>${slot.toUpperCase()}</h3>
-
-    <div class="card" id="card">
-      <b>${item.time || "—"} – ${item.name}</b><br><br>
-      ${item.opis}<br><br>
-      🚀 ${item.dojazd}
-    </div>
-
-    <button class="map-btn" onclick="window.open('${mapLink}')">📍 Mapy</button>
-
-    <div class="actions">
-      <button onclick="next()">❌</button>
-      <button onclick="choose()">👍</button>
-    </div>
-  `;
-
-  swipe();
-}
-
-function swipe(){
-  const card = document.getElementById("card");
-
-  card.addEventListener("touchstart",e=>{
-    startX = e.touches[0].clientX;
-  });
-
-  card.addEventListener("touchend",e=>{
-    let diff = e.changedTouches[0].clientX - startX;
-
-    if(diff > 60) choose();
-    else if(diff < -60) next();
-  });
-}
-
-function next(){
-  index++;
-  if(index >= data[sloty[currentSlot]].length){
-    index = 0;
-  }
-  pokaz();
-}
-
-function choose(){
-  const slot = sloty[currentSlot];
-  wybrane.push(data[slot][index]);
-
-  currentSlot++;
-  index = 0;
-
-  if(currentSlot >= sloty.length){
-    podsumowanie();
-  } else {
-    pokaz();
-  }
-}
-
-function podsumowanie(){
-  const app = document.getElementById("app");
-
-  app.innerHTML = "<h3>🔥 Twój plan:</h3>";
-
-  wybrane.forEach(x=>{
-    const mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(x.name)}`;
+  lista.forEach(item=>{
+    const map = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`;
 
     app.innerHTML += `
       <div class="card">
-        <b>${x.time} – ${x.name}</b><br><br>
-        ${x.opis}<br><br>
-        <a href="${mapLink}" target="_blank">📍 Mapy</a>
+        <b>${item.time} – ${item.name}</b><br><br>
+        ${item.opis}<br><br>
+        🚀 ${item.dojazd}<br><br>
+        <a href="${map}" target="_blank">📍 Mapy</a>
       </div>
     `;
   });
-
-  app.innerHTML += `<button class="save-btn" onclick="zapisz()">💾 Zapisz</button>`;
 }
 
-function zapisz(){
-  let p = JSON.parse(localStorage.getItem("plany")||"[]");
-  p.push(wybrane);
-  localStorage.setItem("plany",JSON.stringify(p));
-  alert("Zapisano 👍");
-}
+// 🔥 FINALNY PLAN (bez duplikatów)
+function pokazPlan(){
+  app.innerHTML = "<h3>🔥 Plan dnia</h3>";
 
-function pokazZapisane(){
-  const app = document.getElementById("app");
-  const p = JSON.parse(localStorage.getItem("plany")||"[]");
+  ["kawa","spacer","jedzenie","atrakcja"].forEach(k=>{
+    if(data[k] && data[k][0]){
+      const item = data[k][0];
 
-  app.innerHTML = "<h3>📂 Zapisane:</h3>";
+      const map = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`;
 
-  p.forEach((plan,i)=>{
-    app.innerHTML += `<div class="card"><b>Plan ${i+1}</b><br>`;
-    plan.forEach(x=> app.innerHTML += x.name+"<br>");
-    app.innerHTML += "</div>";
+      app.innerHTML += `
+        <div class="card">
+          <b>${item.time} – ${item.name}</b><br><br>
+          ${item.opis}<br><br>
+          🚀 ${item.dojazd}<br><br>
+          <a href="${map}" target="_blank">📍 Mapy</a>
+        </div>
+      `;
+    }
   });
 }
 </script>
