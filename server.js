@@ -7,6 +7,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// 🔥 FRONT
 app.get("/", (req, res) => {
   res.sendFile(path.resolve("index.html"));
 });
@@ -40,39 +41,91 @@ app.post("/plan", async (req, res) => {
     const prompt = `
 Jesteś lokalnym przewodnikiem po Wrocławiu.
 
-Tworzysz REALNY plan dnia.
+Tworzysz REALNY, PRZEMYŚLANY plan dnia — jak zrobiłby to człowiek.
 
 STYL: ${styl}
 TEMPERATURA: ${temp}°C
 
-WAŻNE:
+---
+
+ZASADY:
+
 - NIE używaj tych miejsc: ${banned}
 - NIE powtarzaj miejsc
-- mieszaj znane i mniej znane miejsca
-- unikaj urzędów i bezsensownych punktów
+- unikaj ogólników
+- plan musi mieć sens i flow
+
+---
+
+TRANSPORT (KRYTYCZNE):
+
+ZAWSZE podawaj szczegóły:
+
+JEŚLI BLISKO:
+→ "8 min pieszo Mostem Tumskim"
+
+JEŚLI DALEJ:
+→ "tramwaj nr 8 z przystanku „Rynek” do „Plac Grunwaldzki” (10 min + 3 min pieszo)"
+
+ZABRONIONE:
+❌ "10 min pieszo"
+❌ "tramwaj"
+
+MUSI BYĆ:
+✔ numer tramwaju
+✔ nazwy przystanków
+✔ czas
+
+---
 
 POGODA:
-- zimno → więcej indoor
+
+- zimno → indoor
 - ciepło → spacery OK
 
+---
+
 WIECZÓR:
+
 - po 20:00:
   - jeśli zimno → tylko indoor
-  - możesz zakończyć plan o 20
+  - brak spacerów
+- możesz zakończyć plan o 20:00
 
-KAŻDY PUNKT:
-- konkret co robić
-- ciekawostka
-- dojście
-- czas pobytu
-- lat, lon
+---
+
+OPISY:
+
+Każdy punkt MUSI mieć:
+
+- co dokładnie zrobić
+- co zjeść / zobaczyć
+- ciekawostkę
+
+ZAKAZ:
+❌ "fajne miejsce"
+❌ ogólniki
+
+---
+
+FLOW:
+
+10:00 kawa
+12:00 atrakcja
+14:00 jedzenie
+16:00 atrakcja
+18:00 kolacja
+20:00 zakończenie
+
+---
 
 FORMAT JSON:
+
 [
   {
     "miejsce": "nazwa",
-    "opis": "opis",
-    "dojscie": "8 min pieszo",
+    "opis": "konkretny opis + ciekawostka",
+    "dojscie": "dokładny transport",
     "czas_pobytu": "45 min",
     "lat": 51.1,
     "lon": 17.0
@@ -99,14 +152,16 @@ FORMAT JSON:
 
     try {
       plan = JSON.parse(text);
-    } catch {}
+    } catch (e) {
+      console.error("JSON parse error:", e);
+    }
 
     // 🔥 fallback
     if (!Array.isArray(plan) || plan.length === 0) {
       plan = [
         {
           miejsce: "Rynek Wrocław",
-          opis: "Serce miasta z klimatem kamienic.",
+          opis: "Centralny punkt miasta z klimatycznymi kamienicami i restauracjami.",
           dojscie: "start",
           czas_pobytu: "45 min",
           lat: 51.109,
@@ -115,14 +170,11 @@ FORMAT JSON:
       ];
     }
 
-    // 🔥 zapis użytych miejsc
+    // 🔥 zapis pamięci
     plan.forEach(p => {
-      if (p.miejsce) {
-        usedPlaces.push(p.miejsce);
-      }
+      if (p.miejsce) usedPlaces.push(p.miejsce);
     });
 
-    // 🔥 limit pamięci (żeby nie rosło w nieskończoność)
     if (usedPlaces.length > 100) {
       usedPlaces = usedPlaces.slice(-50);
     }
@@ -130,10 +182,11 @@ FORMAT JSON:
     res.json({ list: plan, weather });
 
   } catch (err) {
-    console.error(err);
+    console.error("SERVER ERROR:", err);
     res.status(500).json({ error: "error" });
   }
 });
 
+// 🚀 START
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("Server działa:", PORT));
