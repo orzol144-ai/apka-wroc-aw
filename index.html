@@ -12,9 +12,10 @@ body {
   font-family: Arial;
   background: linear-gradient(135deg,#0f172a,#1e293b);
   color:white;
+  overflow:hidden; /* 🔥 KLUCZ */
 }
 
-/* 🔥 HEADER NA STAŁE (FULL WIDTH) */
+/* 🔥 HEADER */
 .header {
   position:fixed;
   top:0;
@@ -24,18 +25,19 @@ body {
   z-index:1000;
 }
 
-/* 🔥 CONTENT W ŚRODKU HEADERA */
 .header-inner {
   max-width:420px;
   margin:auto;
   padding:10px 15px;
 }
 
-/* 🔥 CONTENT POD HEADER */
+/* 🔥 SCROLL TYLKO TU */
 .container {
   max-width:420px;
   margin:auto;
-  padding:100px 15px 15px 15px;
+  height:100vh;
+  overflow-y:auto; /* 🔥 KLUCZ */
+  padding:100px 15px 20px 15px;
 }
 
 select, button {
@@ -75,7 +77,6 @@ button {
   height:250px;
   margin-top:15px;
   border-radius:15px;
-  overflow:hidden;
 }
 </style>
 </head>
@@ -96,7 +97,7 @@ button {
   </div>
 </div>
 
-<div class="container">
+<div class="container" id="scrollArea">
 
 <div id="map"></div>
 <div id="app"></div>
