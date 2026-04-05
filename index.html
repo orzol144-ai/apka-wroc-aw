@@ -12,59 +12,103 @@
 <style>
 body {
   margin:0;
-  font-family: Arial;
-  background: linear-gradient(135deg,#0f172a,#1e293b);
+  font-family: -apple-system, BlinkMacSystemFont, Arial;
+  background: linear-gradient(180deg,#0f172a,#020617);
   color:white;
 }
 
+/* HEADER */
 .header {
-  background:rgba(15,23,42,0.95);
-  padding:10px;
+  padding:15px;
+  text-align:center;
 }
 
-.container {
-  max-width:420px;
-  margin:auto;
-  padding:10px 15px 20px 15px;
-}
-
+/* INPUTY */
 select, button {
   width:100%;
   margin-top:10px;
-  padding:12px;
-  border-radius:12px;
+  padding:14px;
+  border-radius:14px;
   border:none;
   font-size:16px;
 }
 
 button {
-  background:#38bdf8;
-  color:black;
+  background: linear-gradient(135deg,#38bdf8,#0ea5e9);
+  color:white;
   font-weight:bold;
 }
 
+/* CONTAINER */
+.container {
+  max-width:420px;
+  margin:auto;
+  padding:10px;
+}
+
+/* MAPA */
+#map {
+  height:220px;
+  border-radius:20px;
+  overflow:hidden;
+  margin-bottom:15px;
+}
+
+/* KARTY */
 .card {
   margin-top:15px;
-  padding:15px;
-  border-radius:18px;
+  padding:18px;
+  border-radius:20px;
   background:rgba(255,255,255,0.05);
+  backdrop-filter: blur(10px);
+  box-shadow:0 10px 30px rgba(0,0,0,0.4);
+  animation: fadeIn 0.4s ease;
 }
 
-.title {
-  font-size:18px;
+@keyframes fadeIn {
+  from {opacity:0; transform:translateY(10px);}
+  to {opacity:1; transform:translateY(0);}
+}
+
+/* NUMER */
+.badge {
+  width:32px;
+  height:32px;
+  border-radius:50%;
+  background:#38bdf8;
+  display:flex;
+  align-items:center;
+  justify-content:center;
   font-weight:bold;
+  margin-bottom:10px;
 }
 
+/* TYTUŁ */
+.title {
+  font-size:17px;
+  font-weight:bold;
+  margin-bottom:5px;
+}
+
+/* OPIS */
 .meta {
-  margin-top:8px;
   font-size:14px;
-  opacity:0.8;
+  opacity:0.85;
+  margin-top:8px;
+  line-height:1.4;
 }
 
-#map {
-  height:250px;
-  margin-top:15px;
-  border-radius:15px;
+/* MAP BUTTON */
+.map-btn {
+  margin-top:10px;
+  display:block;
+  text-align:center;
+  padding:10px;
+  border-radius:10px;
+  background:#1e293b;
+  color:#38bdf8;
+  text-decoration:none;
+  font-size:14px;
 }
 </style>
 </head>
@@ -72,17 +116,15 @@ button {
 <body>
 
 <div class="header">
-  <div class="container">
-    <h2>📍 Plan dnia</h2>
+  <h2>📍 Plan dnia</h2>
 
-    <select id="styl">
-      <option value="leniwy">😴 Leniwy</option>
-      <option value="aktywny">🏃 Aktywny</option>
-      <option value="romantyczny">❤️ Romantyczny</option>
-    </select>
+  <select id="styl">
+    <option value="leniwy">😴 Leniwy</option>
+    <option value="aktywny">🏃 Aktywny</option>
+    <option value="romantyczny">❤️ Romantyczny</option>
+  </select>
 
-    <button onclick="start()">🚀 Generuj plan</button>
-  </div>
+  <button onclick="start()">🚀 Generuj plan</button>
 </div>
 
 <div class="container">
@@ -114,9 +156,7 @@ function clearMap() {
 }
 
 async function getRoute(coords) {
-  const coordsStr = coords.map(function(c) {
-    return c[1] + "," + c[0];
-  }).join(";");
+  const coordsStr = coords.map(c => c[1] + "," + c[0]).join(";");
 
   const url = "https://router.project-osrm.org/route/v1/foot/" +
               coordsStr +
@@ -127,82 +167,79 @@ async function getRoute(coords) {
 
   if (!data.routes || !data.routes[0]) return null;
 
-  return data.routes[0].geometry.coordinates.map(function(c) {
-    return [c[1], c[0]];
-  });
+  return data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
 }
 
 async function start() {
   document.getElementById("app").innerHTML = "⏳ Tworzę plan...";
 
-  try {
-    const styl = document.getElementById("styl").value;
+  const styl = document.getElementById("styl").value;
 
-    const res = await fetch("/plan", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ styl })
-    });
+  const res = await fetch("/plan", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ styl })
+  });
 
-    const data = await res.json();
+  const data = await res.json();
 
-    if (!data || !data.list) {
-      document.getElementById("app").innerHTML = "❌ Błąd danych";
-      return;
+  initMap();
+  clearMap();
+
+  let html = "";
+  let hour = 10;
+  let coords = [];
+
+  data.list.forEach((item, i) => {
+
+    const mapUrl = "https://www.google.com/maps/search/?api=1&query=" +
+      encodeURIComponent(item.miejsce);
+
+    html += `
+      <div class="card">
+        <div class="badge">${i+1}</div>
+
+        <div class="title">${hour}:00 — ${item.miejsce}</div>
+
+        <div class="meta">${item.opis}</div>
+
+        <div class="meta">🚶 ${item.dojscie}</div>
+        <div class="meta">⏱️ ${item.czas_pobytu}</div>
+
+        <a class="map-btn" href="${mapUrl}" target="_blank">📍 Otwórz w Google Maps</a>
+      </div>
+    `;
+
+    if (item.lat && item.lon) {
+      coords.push([item.lat, item.lon]);
+
+      const marker = L.marker([item.lat, item.lon])
+        .addTo(map)
+        .bindPopup(item.miejsce);
+
+      markers.push(marker);
     }
 
-    initMap();
-    clearMap();
+    hour += 2;
+  });
 
-    let html = "";
-    let hour = 10;
-    let coords = [];
+  if (coords.length > 1) {
+    const route = await getRoute(coords);
 
-    data.list.forEach(function(item, i) {
-
-      html +=
-        '<div class="card">' +
-          '<div class="title">' + (i+1) + '. ' + hour + ':00 — ' + item.miejsce + '</div>' +
-          '<div class="meta">' + (item.opis || "") + '</div>' +
-          '<div class="meta">🚶 ' + (item.dojscie || "") + '</div>' +
-          '<div class="meta">⏱️ ' + (item.czas_pobytu || "") + '</div>' +
-        '</div>';
-
-      if (item.lat && item.lon) {
-        coords.push([item.lat, item.lon]);
-
-        const marker = L.marker([item.lat, item.lon])
-          .addTo(map)
-          .bindPopup((i+1) + ". " + item.miejsce);
-
-        markers.push(marker);
-      }
-
-      hour += 2;
-    });
-
-    if (coords.length > 1) {
-      const route = await getRoute(coords);
-
-      if (route) {
-        line = L.polyline(route, { color:"#38bdf8", weight:5 }).addTo(map);
-        map.fitBounds(line.getBounds());
-      }
+    if (route) {
+      line = L.polyline(route, { color:"#38bdf8", weight:5 }).addTo(map);
+      map.fitBounds(line.getBounds());
     }
-
-    document.getElementById("app").innerHTML = html;
-
-    setTimeout(function() {
-      map.invalidateSize();
-    }, 200);
-
-  } catch (e) {
-    console.error(e);
-    document.getElementById("app").innerHTML = "❌ Błąd aplikacji";
   }
+
+  document.getElementById("app").innerHTML = html;
+
+  setTimeout(() => {
+    map.invalidateSize();
+  }, 200);
 }
 
-// 🔥 PWA
+// PWA
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/service-worker.js");
 }
