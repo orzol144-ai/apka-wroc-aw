@@ -12,7 +12,20 @@ app.get("/", (req, res) => {
   res.sendFile(path.resolve("index.html"));
 });
 
-// 🔥 AI request
+// 🌦️ POGODA (Open-Meteo – darmowe)
+async function getWeather() {
+  const res = await fetch(
+    "https://api.open-meteo.com/v1/forecast?latitude=51.11&longitude=17.03&current_weather=true"
+  );
+  const data = await res.json();
+
+  const temp = data.current_weather.temperature;
+  const wind = data.current_weather.windspeed;
+
+  return { temp, wind };
+}
+
+// 🧠 AI
 async function askAI(prompt) {
   const res = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
@@ -27,7 +40,6 @@ async function askAI(prompt) {
   });
 
   const data = await res.json();
-
   return data.output?.[0]?.content?.[0]?.text || "";
 }
 
@@ -51,14 +63,28 @@ app.post("/plan", async (req, res) => {
   try {
     const { styl } = req.body;
 
+    const weather = await getWeather();
+
     const prompt = `
-Stwórz plan dnia we Wrocławiu.
+Tworzysz plan dnia we Wrocławiu.
 
 STYL: ${styl}
 
+POGODA:
+- temperatura: ${weather.temp}°C
+- wiatr: ${weather.wind} km/h
+
 ZASADY:
-- 6 punktów
-- logiczna trasa (blisko siebie!)
+- dostosuj plan do pogody:
+  - zimno/deszcz → więcej miejsc wewnątrz
+  - ciepło → spacery, bulwary, outdoor
+- 10 propozycji (różnorodne!)
+
+MIX:
+- restauracje
+- kawiarnie
+- atrakcje
+- miejsca chill
 
 FORMAT:
 10:00 – NAZWA
@@ -66,44 +92,46 @@ Opis
 Dojście: ...
 
 WAŻNE:
+- miejsca REALNE (Wrocław)
 - brak gwiazdek **
-- każde miejsce REALNE
 `;
 
     let wynik = await askAI(prompt);
 
-    // fallback
     if (!wynik || wynik.length < 50) {
       wynik = `
 10:00 – Rynek Wrocław
-Serce miasta z kolorowymi kamienicami.
+Serce miasta.
 Dojście: start
 
-11:30 – Ostrów Tumski
-Najstarsza część miasta.
-Dojście: 10 min pieszo
+11:30 – Kawiarnia Central Cafe
+Kawa i chill.
+Dojście: 2 min
 
 13:00 – Hala Targowa
-Street food i lokalne klimaty.
-Dojście: 5 min pieszo
+Jedzenie lokalne.
+Dojście: 5 min
 
 14:30 – Panorama Racławicka
-Ogromne malowidło historyczne.
-Dojście: 10 min pieszo
+Atrakcja.
+Dojście: 10 min
 
-16:00 – Bulwary nad Odrą
-Spacer i chill przy wodzie.
-Dojście: 8 min pieszo
+16:00 – Bulwary Odry
+Spacer.
+Dojście: 8 min
 
 18:00 – Restauracja Bernard
-Kolacja przy Rynku.
-Dojście: 12 min pieszo
+Kolacja.
+Dojście: 12 min
 `;
     }
 
     const list = parsePlan(wynik);
 
-    res.json({ list });
+    res.json({
+      list,
+      weather
+    });
 
   } catch (err) {
     console.error(err);
@@ -112,4 +140,4 @@ Dojście: 12 min pieszo
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Server running on port", PORT));
+app.listen(PORT, () => console.log("Server running"));

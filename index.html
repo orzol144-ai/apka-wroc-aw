@@ -30,6 +30,7 @@ button, select {
   padding:12px;
   border-radius:12px;
   border:none;
+  font-size:16px;
 }
 
 .card {
@@ -37,6 +38,7 @@ button, select {
   background:#1f1f2e;
   padding:15px;
   border-radius:15px;
+  text-align:left;
 }
 
 .actions {
@@ -48,6 +50,19 @@ button, select {
 .actions button {
   flex:1;
   font-size:18px;
+}
+
+.map-link {
+  display:block;
+  margin-top:10px;
+  color:#4da6ff;
+  text-decoration:none;
+}
+
+.weather {
+  margin-top:10px;
+  font-size:14px;
+  opacity:0.8;
 }
 </style>
 </head>
@@ -77,23 +92,43 @@ let index = 0;
 let finalPlan = [];
 
 async function start() {
-  const styl = document.getElementById("styl").value;
+  try {
+    const styl = document.getElementById("styl").value;
 
-  document.getElementById("app").innerHTML = "⏳ Generuję...";
+    document.getElementById("app").innerHTML = "⏳ Generuję...";
 
-  const res = await fetch("/plan", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ styl })
-  });
+    const res = await fetch("/plan", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ styl })
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  list = data.list || [];
-  index = 0;
-  finalPlan = [];
+    if (!data.list || !data.list.length) {
+      document.getElementById("app").innerHTML = "❌ Brak planu";
+      return;
+    }
 
-  render();
+    list = data.list;
+    index = 0;
+    finalPlan = [];
+
+    // 🌦️ pogoda
+    const weatherHtml = `
+      <div class="weather">
+        🌦️ ${data.weather?.temp ?? "?"}°C
+      </div>
+    `;
+
+    document.getElementById("app").innerHTML = weatherHtml;
+
+    render();
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById("app").innerHTML = "❌ Błąd połączenia";
+  }
 }
 
 function render() {
@@ -105,10 +140,16 @@ function render() {
 
   const item = list[index];
 
-  app.innerHTML = `
+  const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.miejsce)}`;
+
+  app.innerHTML += `
     <div class="card">
       <h3>${item.miejsce}</h3>
       <p>${item.opis}</p>
+
+      <a class="map-link" href="${mapUrl}" target="_blank">
+        📍 Otwórz w Google Maps
+      </a>
 
       <div class="actions">
         <button onclick="reject()">👎</button>
@@ -135,14 +176,24 @@ function showFinal() {
   let hour = 10;
 
   finalPlan.forEach(item => {
+    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.miejsce)}`;
+
     html += `
       <div class="card">
         <h4>${hour}:00 — ${item.miejsce}</h4>
         <p>${item.opis}</p>
+        <a class="map-link" href="${mapUrl}" target="_blank">
+          📍 Otwórz w Google Maps
+        </a>
       </div>
     `;
+
     hour += 2;
   });
+
+  if (!finalPlan.length) {
+    html += "<p>❌ Nic nie wybrałeś</p>";
+  }
 
   document.getElementById("app").innerHTML = html;
 }
