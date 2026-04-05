@@ -10,113 +10,122 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
 <style>
+
 body {
   margin:0;
-  font-family: -apple-system, BlinkMacSystemFont, Arial;
-  background: linear-gradient(180deg,#0f172a,#020617);
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: radial-gradient(circle at top, #1e293b, #020617 70%);
   color:white;
 }
 
 /* HEADER */
 .header {
-  padding:15px;
-  text-align:center;
+  padding:20px 15px;
 }
 
-/* INPUTY */
-select, button {
+.title-main {
+  font-size:22px;
+  font-weight:600;
+}
+
+/* SELECT */
+select {
   width:100%;
-  margin-top:10px;
+  margin-top:15px;
   padding:14px;
-  border-radius:14px;
+  border-radius:16px;
   border:none;
   font-size:16px;
+  background:rgba(255,255,255,0.08);
+  color:white;
 }
 
+/* BUTTON */
 button {
-  background: linear-gradient(135deg,#38bdf8,#0ea5e9);
+  width:100%;
+  margin-top:12px;
+  padding:14px;
+  border-radius:16px;
+  border:none;
+  font-size:16px;
+  background: linear-gradient(135deg,#38bdf8,#2563eb);
   color:white;
-  font-weight:bold;
+  font-weight:600;
+  box-shadow:0 10px 20px rgba(56,189,248,0.3);
 }
 
 /* CONTAINER */
 .container {
   max-width:420px;
   margin:auto;
-  padding:10px;
+  padding:0 15px 20px 15px;
 }
 
 /* MAPA */
 #map {
   height:220px;
-  border-radius:20px;
+  border-radius:25px;
   overflow:hidden;
-  margin-bottom:15px;
+  margin-bottom:20px;
+  box-shadow:0 20px 40px rgba(0,0,0,0.5);
 }
 
-/* KARTY */
+/* CARD */
 .card {
-  margin-top:15px;
+  margin-bottom:15px;
   padding:18px;
-  border-radius:20px;
-  background:rgba(255,255,255,0.05);
-  backdrop-filter: blur(10px);
-  box-shadow:0 10px 30px rgba(0,0,0,0.4);
-  animation: fadeIn 0.4s ease;
-}
-
-@keyframes fadeIn {
-  from {opacity:0; transform:translateY(10px);}
-  to {opacity:1; transform:translateY(0);}
+  border-radius:22px;
+  background:rgba(255,255,255,0.06);
+  backdrop-filter: blur(20px);
+  box-shadow:0 15px 40px rgba(0,0,0,0.4);
 }
 
 /* NUMER */
 .badge {
-  width:32px;
-  height:32px;
+  width:34px;
+  height:34px;
   border-radius:50%;
-  background:#38bdf8;
+  background:linear-gradient(135deg,#38bdf8,#2563eb);
   display:flex;
   align-items:center;
   justify-content:center;
   font-weight:bold;
-  margin-bottom:10px;
+  margin-bottom:12px;
 }
 
 /* TYTUŁ */
 .title {
-  font-size:17px;
-  font-weight:bold;
-  margin-bottom:5px;
+  font-size:16px;
+  font-weight:600;
 }
 
 /* OPIS */
 .meta {
   font-size:14px;
   opacity:0.85;
-  margin-top:8px;
-  line-height:1.4;
+  margin-top:10px;
+  line-height:1.5;
 }
 
-/* MAP BUTTON */
+/* BUTTON MAPY */
 .map-btn {
-  margin-top:10px;
+  margin-top:12px;
   display:block;
   text-align:center;
   padding:10px;
-  border-radius:10px;
-  background:#1e293b;
+  border-radius:12px;
+  background:rgba(56,189,248,0.15);
   color:#38bdf8;
   text-decoration:none;
-  font-size:14px;
 }
+
 </style>
 </head>
 
 <body>
 
-<div class="header">
-  <h2>📍 Plan dnia</h2>
+<div class="header container">
+  <div class="title-main">📍 Plan dnia</div>
 
   <select id="styl">
     <option value="leniwy">😴 Leniwy</option>
@@ -157,10 +166,7 @@ function clearMap() {
 
 async function getRoute(coords) {
   const coordsStr = coords.map(c => c[1] + "," + c[0]).join(";");
-
-  const url = "https://router.project-osrm.org/route/v1/foot/" +
-              coordsStr +
-              "?overview=full&geometries=geojson";
+  const url = "https://router.project-osrm.org/route/v1/foot/" + coordsStr + "?overview=full&geometries=geojson";
 
   const res = await fetch(url);
   const data = await res.json();
@@ -173,70 +179,81 @@ async function getRoute(coords) {
 async function start() {
   document.getElementById("app").innerHTML = "⏳ Tworzę plan...";
 
-  const styl = document.getElementById("styl").value;
+  try {
+    const styl = document.getElementById("styl").value;
 
-  const res = await fetch("/plan", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ styl })
-  });
+    const res = await fetch("/plan", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ styl })
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  initMap();
-  clearMap();
-
-  let html = "";
-  let hour = 10;
-  let coords = [];
-
-  data.list.forEach((item, i) => {
-
-    const mapUrl = "https://www.google.com/maps/search/?api=1&query=" +
-      encodeURIComponent(item.miejsce);
-
-    html += `
-      <div class="card">
-        <div class="badge">${i+1}</div>
-
-        <div class="title">${hour}:00 — ${item.miejsce}</div>
-
-        <div class="meta">${item.opis}</div>
-
-        <div class="meta">🚶 ${item.dojscie}</div>
-        <div class="meta">⏱️ ${item.czas_pobytu}</div>
-
-        <a class="map-btn" href="${mapUrl}" target="_blank">📍 Otwórz w Google Maps</a>
-      </div>
-    `;
-
-    if (item.lat && item.lon) {
-      coords.push([item.lat, item.lon]);
-
-      const marker = L.marker([item.lat, item.lon])
-        .addTo(map)
-        .bindPopup(item.miejsce);
-
-      markers.push(marker);
+    if (!data || !data.list) {
+      document.getElementById("app").innerHTML = "❌ Błąd danych";
+      return;
     }
 
-    hour += 2;
-  });
+    initMap();
+    clearMap();
 
-  if (coords.length > 1) {
-    const route = await getRoute(coords);
+    let html = "";
+    let hour = 10;
+    let coords = [];
 
-    if (route) {
-      line = L.polyline(route, { color:"#38bdf8", weight:5 }).addTo(map);
-      map.fitBounds(line.getBounds());
+    data.list.forEach((item, i) => {
+
+      const mapUrl = "https://www.google.com/maps/search/?api=1&query=" +
+        encodeURIComponent(item.miejsce);
+
+      html += `
+        <div class="card">
+          <div class="badge">${i+1}</div>
+
+          <div class="title">${hour}:00 — ${item.miejsce}</div>
+
+          <div class="meta">${item.opis || ""}</div>
+
+          <div class="meta">🚶 ${item.dojscie || ""}</div>
+          <div class="meta">⏱️ ${item.czas_pobytu || ""}</div>
+
+          <a class="map-btn" href="${mapUrl}" target="_blank">📍 Otwórz mapę</a>
+        </div>
+      `;
+
+      if (item.lat && item.lon) {
+        coords.push([item.lat, item.lon]);
+
+        const marker = L.marker([item.lat, item.lon])
+          .addTo(map)
+          .bindPopup(item.miejsce);
+
+        markers.push(marker);
+      }
+
+      hour += 2;
+    });
+
+    if (coords.length > 1) {
+      const route = await getRoute(coords);
+
+      if (route) {
+        line = L.polyline(route, { color:"#38bdf8", weight:5 }).addTo(map);
+        map.fitBounds(line.getBounds());
+      }
     }
+
+    document.getElementById("app").innerHTML = html;
+
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+
+  } catch (e) {
+    console.error(e);
+    document.getElementById("app").innerHTML = "❌ Błąd aplikacji";
   }
-
-  document.getElementById("app").innerHTML = html;
-
-  setTimeout(() => {
-    map.invalidateSize();
-  }, 200);
 }
 
 // PWA
