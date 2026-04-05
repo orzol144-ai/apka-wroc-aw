@@ -11,9 +11,9 @@ app.get("/", (req, res) => {
   res.sendFile(path.resolve("index.html"));
 });
 
-// 🔥 GPT helper
+// 🔥 AI helper
 async function askAI(prompt) {
-  const response = await fetch("https://api.openai.com/v1/responses", {
+  const res = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -25,52 +25,50 @@ async function askAI(prompt) {
     })
   });
 
-  const data = await response.json();
+  const data = await res.json();
   return data.output[0].content[0].text;
 }
 
-// 📍 PLAN DNIA MULTI OPCJE
+// 🔥 PLAN DNIA (NOWY SYSTEM JSON)
 app.post("/plan", async (req, res) => {
   const { styl, transport } = req.body;
 
   const prompt = `
-Stwórz plan dnia we Wrocławiu z WIELOMA OPCJAMI.
+Stwórz plan dnia we Wrocławiu.
+
+Zwróć TYLKO JSON (bez tekstu poza JSON)
+
+FORMAT:
+[
+  {
+    "godzina": "10:00",
+    "miejsce": "Nazwa miejsca",
+    "opis": "ciekawy opis + ciekawostka",
+    "dojscie": "jak dojść z poprzedniego miejsca (czas + środek transportu)"
+  }
+]
 
 ZASADY:
-- dzień 10:00–20:00
-- MINIMUM 6 bloków (godzin)
-- każdy blok = 3-5 opcji
+- max 6 punktów
+- realna trasa (blisko siebie)
+- NIE powtarzaj typów miejsc
+- styl: ${styl}
+- transport: ${transport}
 
-FORMAT (BARDZO WAŻNY):
-
-10:00
-- Kawiarnia A – opis... Dojście...
-- Kawiarnia B – opis... Dojście...
-- Kawiarnia C – opis... Dojście...
-
-11:30
-- Atrakcja A – opis... Dojście...
-- Atrakcja B – opis... Dojście...
-- Atrakcja C – opis... Dojście...
-
-13:00
-- Jedzenie A – opis... Dojście...
-- Jedzenie B – opis... Dojście...
-
-ZASADY:
-- miejsca blisko siebie
-- logiczna trasa
-- NIE powtarzaj typów
-- dodaj ciekawostki
-
-Styl: luźny
+WAŻNE:
+- każdy kolejny punkt musi zawierać DOJŚCIE od poprzedniego
+- np: "10 min pieszo" albo "tramwaj 9 → przystanek X"
 `;
 
   try {
-    const wynik = await askAI(prompt);
-    res.json({ wynik });
-  } catch (err) {
-    res.status(500).json({ error: "Błąd" });
+    const raw = await askAI(prompt);
+
+    const parsed = JSON.parse(raw);
+
+    res.json({ plan: parsed });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "AI error" });
   }
 });
 

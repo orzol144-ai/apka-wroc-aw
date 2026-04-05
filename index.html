@@ -86,41 +86,88 @@ button {
 </div>
 
 <script>
+let plan = [];
+let currentIndex = 0;
 
-let slots = [];
-let current = {};
-
-async function start(){
+async function start() {
   const styl = document.getElementById("styl").value;
   const transport = document.getElementById("transport").value;
 
-  document.getElementById("app").innerHTML = "⏳ Generuję...";
+  document.getElementById("app").innerHTML = "⏳ Generuję plan...";
 
-  const res = await fetch("/plan",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({ styl, transport })
-  });
+  try {
+    const res = await fetch("/plan", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ styl, transport })
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  parse(data.wynik);
+    console.log("PLAN:", data);
+
+    plan = data.plan;
+    currentIndex = 0;
+
+    render();
+
+  } catch (e) {
+    console.error(e);
+    document.getElementById("app").innerHTML = "❌ Błąd";
+  }
+}
+
+function render() {
+  const app = document.getElementById("app");
+
+  if (!plan || plan.length === 0) {
+    app.innerHTML = "Brak planu";
+    return;
+  }
+
+  const item = plan[currentIndex];
+
+  app.innerHTML = `
+    <div class="card">
+      <h3>${item.godzina} — ${item.miejsce}</h3>
+      <p>${item.opis}</p>
+      <p>🚶 ${item.dojscie}</p>
+
+      <div style="margin-top:15px;">
+        <button onclick="prev()">⬅️</button>
+        <button onclick="next()">➡️</button>
+        <button onclick="remove()">❌</button>
+      </div>
+    </div>
+  `;
+}
+
+function next() {
+  if (currentIndex < plan.length - 1) {
+    currentIndex++;
+    render();
+  }
+}
+
+function prev() {
+  if (currentIndex > 0) {
+    currentIndex--;
+    render();
+  }
+}
+
+function remove() {
+  plan.splice(currentIndex, 1);
+
+  if (currentIndex >= plan.length) {
+    currentIndex = plan.length - 1;
+  }
+
   render();
 }
-
-// 🔥 PARSER MULTI OPCJI
-function parse(text){
-  slots = [];
-  current = {};
-
-  const blocks = text.split(/\n\d{2}:\d{2}/).slice(1);
-
-  blocks.forEach((block,i)=>{
-    const options = block.split("\n-").filter(x=>x.trim());
-    slots.push(options);
-    current[i]=0;
-  });
-}
+</script>
 
 // 🎯 RENDER
 function render(){
