@@ -5,13 +5,13 @@ import path from "path";
 const app = express();
 app.use(cors());
 app.use(express.json());
-
 app.use(express.static("."));
 
 app.get("/", (req, res) => {
   res.sendFile(path.resolve("index.html"));
 });
 
+// 🔥 GPT helper
 async function askAI(prompt) {
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
@@ -26,91 +26,89 @@ async function askAI(prompt) {
   });
 
   const data = await response.json();
-  return data.output?.[0]?.content?.[0]?.text || "";
+  return data.output[0].content[0].text;
 }
 
+// 📍 PLAN DNIA
 app.post("/plan", async (req, res) => {
   const { styl, transport } = req.body;
 
   const prompt = `
-Plan dnia Wrocław.
-
-Styl: ${styl}
-Transport: ${transport}
-
-JSON:
-
-{
- "kawa": [],
- "jedzenie": [],
- "spacer": [],
- "atrakcja": []
-}
+Stwórz REALNY plan dnia we Wrocławiu.
 
 WARUNKI:
-- MINIMUM 5 opcji w każdej kategorii
-- miejsca BLISKO siebie
-- logiczna trasa
-- godziny obowiązkowe
+- styl: ${styl}
+- transport: ${transport}
+- pogoda: chłodno (~10°C)
 
-OPIS:
-- 2-3 zdania
-- ciekawostka
-- konkrety
+ZASADY:
+- miejsca muszą być BLISKO siebie (logiczna trasa)
+- NIE skacz po mieście
+- maks 10-20 min między punktami
+- jeśli dalej → podaj tramwaj/autobus (nr + gdzie wysiąść)
+- jeśli blisko → podaj czas pieszo
 
-DOJAZD:
-- pieszo / tramwaj / auto + czas
+FORMAT (BARDZO WAŻNE):
+Każdy punkt dokładnie tak:
 
-ZWROT tylko JSON
+10:00 – NAZWA MIEJSCA
+Opis (min 2 zdania + ciekawostka)
+Dojście: pieszo X min / tramwaj nr X (wysiądź: ...)
+
+11:30 – NAZWA MIEJSCA
+Opis...
+Dojście...
+
+12:30 – NAZWA MIEJSCA
+Opis...
+Dojście...
+
+ZASADY FORMATU:
+- MUSI być "– NAZWA"
+- MUSI być "Dojście:"
+- NIE używaj "undefined"
+- NIE powtarzaj godzin
+- każdy punkt inny typ (kawa → spacer → jedzenie → atrakcja)
+
+Styl: luźny jak kolega.
+
 `;
 
   try {
-    let text = await askAI(prompt);
-
-    text = text.replace(/```json/g,"").replace(/```/g,"").trim();
-
-    let parsed;
-
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      parsed = {
-        kawa: [],
-        jedzenie: [],
-        spacer: [],
-        atrakcja: []
-      };
-    }
-
-    // 🔥 fallback jeśli AI coś spartoli
-    const godziny = ["10:00","11:30","13:00","15:00","17:00"];
-
-    Object.keys(parsed).forEach((k,i)=>{
-      if(!parsed[k] || parsed[k].length < 3){
-        parsed[k] = [{
-          time: godziny[i],
-          name: "Rynek Wrocław",
-          opis: "Centralne miejsce miasta pełne życia i historii. To tutaj krzyżują się wszystkie klimaty Wrocławia.",
-          dojazd: "centrum, wszędzie blisko"
-        }];
-      }
-
-      parsed[k].forEach((item,idx)=>{
-        if(!item.time) item.time = godziny[idx] || "12:00";
-      });
-    });
-
-    res.json(parsed);
-
+    const wynik = await askAI(prompt);
+    res.json({ wynik });
   } catch (err) {
-    res.json({
-      kawa: [],
-      jedzenie: [],
-      spacer: [],
-      atrakcja: []
-    });
+    console.error(err);
+    res.status(500).json({ error: "Błąd" });
   }
 });
 
+// 🍔 GŁODNY (nadpisuje plan)
+app.post("/food", async (req, res) => {
+  const prompt = `
+Podaj 3 dobre miejsca na jedzenie we Wrocławiu.
+
+FORMAT:
+NAZWA – opis + klimat + ciekawostka
+`;
+
+  const wynik = await askAI(prompt);
+  res.json({ wynik });
+});
+
+// 😴 ODPOCZYNEK (krótki plan)
+app.post("/short", async (req, res) => {
+  const prompt = `
+Stwórz krótki plan dnia (max 3 punkty).
+
+FORMAT:
+10:00 – NAZWA
+Opis...
+`;
+
+  const wynik = await askAI(prompt);
+  res.json({ wynik });
+});
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT);
+app.listen(PORT, () => console.log("Serwer działa"));

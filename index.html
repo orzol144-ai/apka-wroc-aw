@@ -34,6 +34,7 @@ button, select {
 button {
   background: linear-gradient(135deg,#667eea,#764ba2);
   color:white;
+  font-weight:bold;
 }
 
 .quick {
@@ -41,11 +42,25 @@ button {
   gap:10px;
 }
 
+.quick button {
+  width:50%;
+}
+
 .card {
   background:#2a2a3a;
   padding:15px;
   margin-top:15px;
   border-radius:15px;
+}
+
+.nav {
+  display:flex;
+  justify-content:space-between;
+  margin-top:10px;
+}
+
+.nav button {
+  width:48%;
 }
 </style>
 </head>
@@ -64,7 +79,6 @@ button {
 
 <select id="transport">
 <option value="pieszo">🚶 Pieszo</option>
-<option value="komunikacja">🚋 Komunikacja</option>
 <option value="auto">🚗 Auto</option>
 </select>
 
@@ -80,81 +94,77 @@ button {
 </div>
 
 <script>
-let data = {};
 
+let rawText = "";
+
+// 🚀 START
 async function start(){
   const styl = document.getElementById("styl").value;
   const transport = document.getElementById("transport").value;
 
-  document.getElementById("app").innerHTML = "⏳ Generuję...";
+  document.getElementById("app").innerHTML = "⏳ Generuję plan...";
 
-  try {
-    const res = await fetch("/plan",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({ styl, transport })
-    });
+  const res = await fetch("/plan",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({ styl, transport })
+  });
 
-    data = await res.json();
+  const data = await res.json();
+  rawText = data.wynik;
 
-    pokazPlan();
-
-  } catch(e){
-    document.getElementById("app").innerHTML = "❌ Błąd połączenia";
-  }
+  render();
 }
 
-function glodny(){
-  pokazListe("jedzenie");
+// 🍔 GŁODNY
+async function glodny(){
+  const res = await fetch("/food",{method:"POST"});
+  const data = await res.json();
+  rawText = data.wynik;
+  render();
 }
 
-function zmeczony(){
-  pokazListe("spacer");
+// 😴 ODPOCZYNEK
+async function zmeczony(){
+  const res = await fetch("/short",{method:"POST"});
+  const data = await res.json();
+  rawText = data.wynik;
+  render();
 }
 
-function pokazListe(kategoria){
+// 🔥 RENDER PLANU
+function render(){
   const app = document.getElementById("app");
+  app.innerHTML = "<h3>🔥 Plan dnia</h3>";
 
-  app.innerHTML = `<h3>${kategoria}</h3>`;
+  // DZIELENIE PO GODZINACH
+  const parts = rawText.split(/(?=\d{2}:\d{2})/);
 
-  const lista = data[kategoria] || [];
+  parts.forEach(p => {
+    const text = p.trim();
+    if(!text) return;
 
-  lista.forEach(item=>{
-    const map = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`;
+    // NAZWA
+    const nameMatch = text.match(/\d{2}:\d{2} – (.+)/);
+    const name = nameMatch ? nameMatch[1] : "Miejsce";
+
+    // GODZINA
+    const timeMatch = text.match(/\d{2}:\d{2}/);
+    const time = timeMatch ? timeMatch[0] : "";
+
+    const map = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`;
 
     app.innerHTML += `
       <div class="card">
-        <b>${item.time} – ${item.name}</b><br><br>
-        ${item.opis}<br><br>
-        🚀 ${item.dojazd}<br><br>
+        <b>${time} – ${name}</b><br><br>
+        ${text.replace(/\d{2}:\d{2} – .+/, "")}<br><br>
+
         <a href="${map}" target="_blank">📍 Mapy</a>
       </div>
     `;
   });
 }
 
-function pokazPlan(){
-  const app = document.getElementById("app");
-
-  app.innerHTML = "<h3>🔥 Plan dnia</h3>";
-
-  ["kawa","spacer","jedzenie","atrakcja"].forEach(k=>{
-    if(data[k] && data[k][0]){
-      const item = data[k][0];
-
-      const map = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`;
-
-      app.innerHTML += `
-        <div class="card">
-          <b>${item.time} – ${item.name}</b><br><br>
-          ${item.opis}<br><br>
-          🚀 ${item.dojazd}<br><br>
-          <a href="${map}" target="_blank">📍 Mapy</a>
-        </div>
-      `;
-    }
-  });
-}
 </script>
 
 </body>
