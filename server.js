@@ -28,14 +28,44 @@ async function getWeather() {
   }
 }
 
-// 🔥 ATRAKCJE
-async function getAttractions() {
-  const query = `
-  [out:json];
-  area["name"="Wrocław"]->.searchArea;
-  (node["tourism"](area.searchArea););
-  out body;
-  `;
+// 🔥 ATRAKCJE (RÓŻNE TRYBY)
+async function getAttractions(styl) {
+  let query = "";
+
+  // 😴 LENIWY = centrum
+  if (styl === "leniwy") {
+    query = `
+    [out:json];
+    node(51.105,17.02,51.115,17.05)
+    ["tourism"];
+    out;
+    `;
+  }
+
+  // 🏃 AKTYWNY = szeroko + ruch
+  else if (styl === "aktywny") {
+    query = `
+    [out:json];
+    area["name"="Wrocław"]->.searchArea;
+    (
+      node["tourism"](area.searchArea);
+      node["leisure"~"park|fitness_centre|sports_centre"](area.searchArea);
+    );
+    out;
+    `;
+  }
+
+  // ❤️ ROMANTYCZNY
+  else {
+    query = `
+    [out:json];
+    area["name"="Wrocław"]->.searchArea;
+    (
+      node["tourism"](area.searchArea);
+    );
+    out;
+    `;
+  }
 
   try {
     const res = await fetch("https://overpass-api.de/api/interpreter", {
@@ -55,18 +85,21 @@ async function getAttractions() {
         typ: "attraction",
         rating: (Math.random() * 1.5 + 3.5).toFixed(1)
       }));
+
   } catch {
     return [];
   }
 }
 
-// 🔥 JEDZENIE / KAWA
+// 🔥 FOOD (CZYSTE)
 async function getFoodPlaces() {
   const query = `
   [out:json];
   area["name"="Wrocław"]->.searchArea;
-  (node["amenity"~"restaurant|cafe|fast_food"](area.searchArea););
-  out body;
+  (
+    node["amenity"~"restaurant|cafe|fast_food|bar"](area.searchArea);
+  );
+  out;
   `;
 
   try {
@@ -79,7 +112,11 @@ async function getFoodPlaces() {
 
     return data.elements
       .filter(p => p.tags && p.tags.name)
-      .slice(0, 50)
+      .filter(p => {
+        const name = p.tags.name.toLowerCase();
+        return !name.includes("żabka") && !name.includes("kiosk");
+      })
+      .slice(0, 40)
       .map(p => ({
         miejsce: p.tags.name,
         lat: p.lat,
@@ -90,12 +127,13 @@ async function getFoodPlaces() {
             : "coffee",
         rating: (Math.random() * 1.5 + 3.5).toFixed(1)
       }));
+
   } catch {
     return [];
   }
 }
 
-// 🔥 FLOW — KLUCZ: po jedzeniu zawsze atrakcja
+// 🔥 FLOW (po jedzeniu zawsze atrakcja)
 function buildSmartFlow(allPlaces) {
   const food = allPlaces.filter(p => p.typ === "food");
   const coffee = allPlaces.filter(p => p.typ === "coffee");
@@ -114,19 +152,16 @@ function buildSmartFlow(allPlaces) {
 
   while (result.length < 10 && (food.length || coffee.length || attr.length)) {
 
-    // 🔥 HARD RULE
     if (lastType === "food") {
       if (take(attr, "attraction")) continue;
       if (take(coffee, "coffee")) continue;
       break;
     }
 
-    // start
     if (!lastType) {
       if (take(attr, "attraction")) continue;
     }
 
-    // normal flow
     if (take(attr, "attraction")) continue;
     if (take(coffee, "coffee")) continue;
     if (take(food, "food")) continue;
@@ -141,13 +176,11 @@ function buildSmartFlow(allPlaces) {
 async function enrichPlacesWithAIStyled(places, styl) {
   try {
     const prompt = `
-Opisz miejsca konkretnie (1 zdanie, bez metafor).
+Opisz miejsca konkretnie (1 zdanie).
 
 Styl: ${styl}
 
-Powiedz:
-- co tam jest
-- co zrobić / zjeść
+Powiedz co tam robić / co zjeść.
 
 JSON:
 [
@@ -200,7 +233,7 @@ app.post("/plan", async (req, res) => {
 
     const weather = await getWeather();
 
-    const attractions = await getAttractions();
+    const attractions = await getAttractions(styl);
     const food = await getFoodPlaces();
 
     let allPlaces = [
@@ -213,15 +246,11 @@ app.post("/plan", async (req, res) => {
 
     let places = buildSmartFlow(allPlaces);
 
-    // 🔥 gwarancja minimum
     if (places.length < 6) {
       places = [
         { miejsce: "Rynek Wrocław", lat: 51.109, lon: 17.032, typ: "attraction" },
         { miejsce: "Ostrów Tumski", lat: 51.114, lon: 17.046, typ: "attraction" },
-        { miejsce: "Hala Targowa", lat: 51.111, lon: 17.041, typ: "food" },
-        { miejsce: "Panorama Racławicka", lat: 51.110, lon: 17.044, typ: "attraction" },
-        { miejsce: "Bulwary nad Odrą", lat: 51.108, lon: 17.035, typ: "attraction" },
-        { miejsce: "Bernard", lat: 51.109, lon: 17.032, typ: "food" }
+        { miejsce: "Hala Targowa", lat: 51.111, lon: 17.041, typ: "food" }
       ];
     }
 
