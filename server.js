@@ -1,20 +1,15 @@
 import express from "express";
 import cors from "cors";
 import path from "path";
-import { fileURLToPath } from "url";
 
 const app = express();
-
-// 🔥 fix __dirname w ESM
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 app.use(cors());
 app.use(express.json());
 
-// 🔥 ROOT (działa na Render)
+// 🔥 NAJPROSTSZY I NAJPEWNIEJSZY ROOT
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+  res.sendFile(path.resolve("index.html"));
 });
 
 // 🔥 TEST
