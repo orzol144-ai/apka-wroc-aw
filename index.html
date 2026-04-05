@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <title>Plan dnia</title>
 
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0f172a">
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
 <style>
@@ -12,32 +15,17 @@ body {
   font-family: Arial;
   background: linear-gradient(135deg,#0f172a,#1e293b);
   color:white;
-  overflow:hidden; /* 🔥 KLUCZ */
 }
 
-/* 🔥 HEADER */
 .header {
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
   background:rgba(15,23,42,0.95);
-  z-index:1000;
+  padding:10px;
 }
 
-.header-inner {
-  max-width:420px;
-  margin:auto;
-  padding:10px 15px;
-}
-
-/* 🔥 SCROLL TYLKO TU */
 .container {
   max-width:420px;
   margin:auto;
-  height:100vh;
-  overflow-y:auto; /* 🔥 KLUCZ */
-  padding:100px 15px 20px 15px;
+  padding:10px 15px 20px 15px;
 }
 
 select, button {
@@ -84,7 +72,7 @@ button {
 <body>
 
 <div class="header">
-  <div class="header-inner">
+  <div class="container">
     <h2>📍 Plan dnia</h2>
 
     <select id="styl">
@@ -97,11 +85,9 @@ button {
   </div>
 </div>
 
-<div class="container" id="scrollArea">
-
-<div id="map"></div>
-<div id="app"></div>
-
+<div class="container">
+  <div id="map"></div>
+  <div id="app"></div>
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -214,6 +200,11 @@ async function start() {
     console.error(e);
     document.getElementById("app").innerHTML = "❌ Błąd aplikacji";
   }
+}
+
+// 🔥 PWA
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/service-worker.js");
 }
 
 </script>
