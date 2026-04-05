@@ -1,15 +1,20 @@
-import express from "express";
-import cors from "cors";
-import path from "path";
+const express = require("express");
+const cors = require("cors");
+const path = require("path");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// 🔥 SERWOWANIE INDEX (BEZ PUBLIC)
+// 🔥 ROOT (NA SZTYWNO – ZERO PROBLEMÓW)
 app.get("/", (req, res) => {
-  res.sendFile(path.resolve("index.html"));
+  res.sendFile(path.join(__dirname, "index.html"));
+});
+
+// 🔥 TEST ROUTE (ważne!)
+app.get("/test", (req, res) => {
+  res.send("OK");
 });
 
 // 🔥 AI
@@ -28,7 +33,6 @@ async function askAI(prompt) {
     });
 
     const data = await res.json();
-
     return data.output?.[0]?.content?.[0]?.text || "";
   } catch (e) {
     console.error("AI ERROR:", e);
@@ -56,14 +60,10 @@ async function getWeather() {
 function parsePlan(text) {
   if (!text) return [];
 
-  const blocks = text.split("\n\n");
-
-  return blocks.map(block => {
+  return text.split("\n\n").map(block => {
     const lines = block.split("\n");
 
-    const title = lines[0] || "";
-    const miejsce = title.split("–")[1]?.trim() || "Miejsce";
-
+    const miejsce = (lines[0]?.split("–")[1] || "").trim();
     const opis = lines.slice(1).join(" ").trim();
 
     return { miejsce, opis };
@@ -75,22 +75,16 @@ app.post("/plan", async (req, res) => {
   try {
     const { styl } = req.body;
 
-    console.log("PLAN REQUEST:", styl);
-
     const weather = await getWeather();
 
     const prompt = `
-Plan dnia we Wrocławiu.
+Plan dnia Wrocław.
 
 STYL: ${styl}
 POGODA: ${weather.temp}°C
 
-ZASADY:
-- 10 miejsc
-- dopasuj do pogody
-- mix: restauracje, kawiarnie, atrakcje
-
-FORMAT:
+10 miejsc. Mix atrakcji, jedzenia, kawiarni.
+Format:
 10:00 – NAZWA
 Opis
 Dojście: ...
@@ -98,48 +92,27 @@ Dojście: ...
 
     let wynik = await askAI(prompt);
 
-    console.log("AI RAW:", wynik);
-
-    // 🔥 fallback (ważne!)
     if (!wynik || wynik.length < 50) {
       wynik = `
 10:00 – Rynek Wrocław
-Centrum miasta i start planu.
+Start planu.
 Dojście: start
 
-11:30 – Ostrów Tumski
-Klimatyczna część miasta.
-Dojście: 10 min pieszo
-
-13:00 – Hala Targowa
-Jedzenie i klimat.
-Dojście: 5 min
-
-14:30 – Panorama Racławicka
-Duża atrakcja.
+12:00 – Ostrów Tumski
+Spacer.
 Dojście: 10 min
-
-16:00 – Bulwary Odry
-Spacer i chill.
-Dojście: 8 min
-
-18:00 – Restauracja Bernard
-Kolacja.
-Dojście: 12 min
 `;
     }
 
     const list = parsePlan(wynik);
 
-    console.log("PARSED:", list.length);
-
     res.json({ list, weather });
 
   } catch (err) {
-    console.error("SERVER ERROR:", err);
-    res.status(500).json({ error: "Server error" });
+    console.error(err);
+    res.status(500).json({ error: "error" });
   }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Server działa na porcie", PORT));
+app.listen(PORT, () => console.log("Server działa:", PORT));
