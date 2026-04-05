@@ -25,7 +25,7 @@ body{
   color:white;
 }
 
-/* 🔥 HEADER GLASS */
+/* HEADER */
 .header{
   position:sticky;
   top:0;
@@ -41,7 +41,6 @@ body{
   font-weight:600;
 }
 
-/* SELECT */
 select{
   width:100%;
   margin-top:12px;
@@ -52,7 +51,6 @@ select{
   color:white;
 }
 
-/* BUTTON PREMIUM */
 button{
   width:100%;
   margin-top:10px;
@@ -65,20 +63,30 @@ button{
   color:white;
 }
 
-/* CONTAINER */
 .container{
   max-width:420px;
   margin:auto;
   padding:10px 15px 30px;
 }
 
-/* MAP HERO */
 #map{
   height:220px;
   border-radius:25px;
   overflow:hidden;
   box-shadow:0 25px 50px rgba(0,0,0,0.6);
-  margin-bottom:25px;
+  margin-bottom:15px;
+}
+
+/* SAVE BUTTON */
+.save-btn{
+  width:100%;
+  margin-bottom:15px;
+  padding:12px;
+  border-radius:14px;
+  border:none;
+  background:linear-gradient(135deg,#22c55e,#16a34a);
+  color:white;
+  font-weight:600;
 }
 
 /* TIMELINE */
@@ -97,14 +105,12 @@ button{
   background:rgba(255,255,255,0.08);
 }
 
-/* ITEM */
 .item{
   position:relative;
   margin-bottom:25px;
   padding-left:40px;
 }
 
-/* DOT */
 .dot{
   position:absolute;
   left:6px;
@@ -116,7 +122,6 @@ button{
   box-shadow:0 0 10px var(--accent);
 }
 
-/* CARD */
 .card{
   padding:18px;
   border-radius:20px;
@@ -126,19 +131,22 @@ button{
   animation:fadeUp 0.4s ease;
 }
 
-/* ANIMACJA */
 @keyframes fadeUp{
   from{opacity:0; transform:translateY(15px);}
   to{opacity:1; transform:translateY(0);}
 }
 
-/* TITLE */
+.time{
+  font-size:13px;
+  opacity:0.7;
+  margin-bottom:5px;
+}
+
 .title{
   font-weight:600;
   font-size:16px;
 }
 
-/* META */
 .meta{
   margin-top:10px;
   font-size:14px;
@@ -146,14 +154,6 @@ button{
   line-height:1.5;
 }
 
-/* BADGE GODZINY */
-.time{
-  font-size:13px;
-  opacity:0.7;
-  margin-bottom:5px;
-}
-
-/* BUTTON MAP */
 .map-btn{
   margin-top:12px;
   display:block;
@@ -163,11 +163,6 @@ button{
   background:rgba(56,189,248,0.15);
   color:var(--accent);
   text-decoration:none;
-  transition:0.2s;
-}
-
-.map-btn:active{
-  transform:scale(0.97);
 }
 
 </style>
@@ -188,8 +183,13 @@ button{
 </div>
 
 <div class="container">
-  <div id="map"></div>
-  <div id="app"></div>
+
+<div id="map"></div>
+
+<button class="save-btn" onclick="savePlan()">💾 Zapisz plan</button>
+
+<div id="app"></div>
+
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -199,6 +199,7 @@ button{
 let map;
 let markers=[];
 let line;
+let lastPlan=[];
 
 function initMap(){
   if(!map){
@@ -225,62 +226,90 @@ async function start(){
 
   document.getElementById("app").innerHTML="⏳ Tworzę plan...";
 
-  const styl=document.getElementById("styl").value;
+  try{
+    const styl=document.getElementById("styl").value;
 
-  const res=await fetch("/plan",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({styl})
-  });
+    const res=await fetch("/plan",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({styl})
+    });
 
-  const data=await res.json();
+    const data=await res.json();
 
-  initMap();
-  clearMap();
+    if(!data || !data.list){
+      document.getElementById("app").innerHTML="❌ Błąd danych";
+      return;
+    }
 
-  let html='<div class="timeline">';
-  let hour=10;
-  let coords=[];
+    lastPlan=data.list;
 
-  data.list.forEach((item,i)=>{
+    initMap();
+    clearMap();
 
-    const mapUrl="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(item.miejsce);
+    let html='<div class="timeline">';
+    let hour=10;
+    let coords=[];
 
-    html+=`
-      <div class="item">
-        <div class="dot"></div>
-        <div class="card">
-          <div class="time">${hour}:00</div>
-          <div class="title">${item.miejsce}</div>
-          <div class="meta">${item.opis}</div>
-          <div class="meta">🚶 ${item.dojscie}</div>
-          <div class="meta">⏱️ ${item.czas_pobytu}</div>
-          <a class="map-btn" href="${mapUrl}" target="_blank">📍 Otwórz mapę</a>
+    data.list.forEach((item,i)=>{
+
+      const mapUrl="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(item.miejsce);
+
+      html+=`
+        <div class="item">
+          <div class="dot"></div>
+          <div class="card">
+            <div class="time">${hour}:00</div>
+            <div class="title">${item.miejsce}</div>
+            <div class="meta">${item.opis || ""}</div>
+            <div class="meta">🚶 ${item.dojscie || ""}</div>
+            <div class="meta">⏱️ ${item.czas_pobytu || ""}</div>
+            <a class="map-btn" href="${mapUrl}" target="_blank">📍 Otwórz mapę</a>
+          </div>
         </div>
-      </div>
-    `;
+      `;
 
-    if(item.lat&&item.lon){
-      coords.push([item.lat,item.lon]);
-      markers.push(L.marker([item.lat,item.lon]).addTo(map));
+      if(item.lat && item.lon){
+        coords.push([item.lat,item.lon]);
+        markers.push(L.marker([item.lat,item.lon]).addTo(map));
+      }
+
+      hour+=2;
+    });
+
+    html+='</div>';
+
+    if(coords.length>1){
+      const route=await getRoute(coords);
+      if(route){
+        line=L.polyline(route,{color:"#38bdf8",weight:5}).addTo(map);
+        map.fitBounds(line.getBounds());
+      }
     }
 
-    hour+=2;
-  });
+    document.getElementById("app").innerHTML=html;
 
-  html+='</div>';
+    setTimeout(()=>map.invalidateSize(),200);
 
-  if(coords.length>1){
-    const route=await getRoute(coords);
-    if(route){
-      line=L.polyline(route,{color:"#38bdf8",weight:5}).addTo(map);
-      map.fitBounds(line.getBounds());
-    }
+  }catch(e){
+    console.error(e);
+    document.getElementById("app").innerHTML="❌ Błąd aplikacji";
+  }
+}
+
+async function savePlan(){
+  if(!lastPlan.length){
+    alert("Najpierw wygeneruj plan");
+    return;
   }
 
-  document.getElementById("app").innerHTML=html;
+  await fetch("/save",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(lastPlan)
+  });
 
-  setTimeout(()=>map.invalidateSize(),200);
+  alert("Zapisano plan 🔥");
 }
 
 if("serviceWorker" in navigator){
