@@ -49,15 +49,10 @@ button {
 
 .card {
   background:#2a2a3a;
-  padding:15px;
+  padding:18px;
   border-radius:15px;
   margin-top:15px;
-}
-
-.card img {
-  width:100%;
-  border-radius:12px;
-  margin-bottom:10px;
+  line-height:1.5;
 }
 
 .actions {
@@ -122,7 +117,7 @@ async function start(){
   const styl = document.getElementById("styl").value;
   const transport = document.getElementById("transport").value;
 
-  document.getElementById("app").innerHTML = "⏳ Generuję...";
+  document.getElementById("app").innerHTML = "⏳ Generuję plan...";
 
   const res = await fetch("/plan",{
     method:"POST",
@@ -139,6 +134,21 @@ async function start(){
   pokaz();
 }
 
+// 🔥 DZIAŁA TERAZ
+function glodny(){
+  if(!data.jedzenie) return;
+  currentSlot = sloty.indexOf("jedzenie");
+  index = 0;
+  pokaz();
+}
+
+function zmeczony(){
+  if(!data.spacer) return;
+  currentSlot = sloty.indexOf("spacer");
+  index = 0;
+  pokaz();
+}
+
 function pokaz(){
   const app = document.getElementById("app");
 
@@ -152,17 +162,13 @@ function pokaz(){
 
   const item = lista[index];
 
-  // 🔥 STABILNE ZDJĘCIA
-  const img = `https://picsum.photos/600/400?random=${index+currentSlot}`;
-
   const mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`;
 
   app.innerHTML = `
     <h3>${slot.toUpperCase()}</h3>
 
     <div class="card" id="card">
-      <img src="${img}">
-      <b>${item.time} – ${item.name}</b><br><br>
+      <b>${item.time || "—"} – ${item.name}</b><br><br>
       ${item.opis}<br><br>
       🚀 ${item.dojazd}
     </div>
@@ -188,11 +194,8 @@ function swipe(){
   card.addEventListener("touchend",e=>{
     let diff = e.changedTouches[0].clientX - startX;
 
-    if(diff > 60){
-      choose();
-    } else if(diff < -60){
-      next();
-    }
+    if(diff > 60) choose();
+    else if(diff < -60) next();
   });
 }
 

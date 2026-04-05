@@ -41,31 +41,25 @@ Transport: ${transport}
 ZWRÓĆ JSON:
 
 {
-  "kawa": [{ "time": "", "name": "", "opis": "", "dojazd": "" }],
-  "jedzenie": [{ "time": "", "name": "", "opis": "", "dojazd": "" }],
-  "spacer": [{ "time": "", "name": "", "opis": "", "dojazd": "" }],
-  "atrakcja": [{ "time": "", "name": "", "opis": "", "dojazd": "" }]
+  "kawa": [{ "time": "10:00", "name": "", "opis": "", "dojazd": "" }],
+  "jedzenie": [{ "time": "13:00", "name": "", "opis": "", "dojazd": "" }],
+  "spacer": [{ "time": "11:30", "name": "", "opis": "", "dojazd": "" }],
+  "atrakcja": [{ "time": "15:00", "name": "", "opis": "", "dojazd": "" }]
 }
 
 WAŻNE:
-- plan ma być logiczny (miejsca blisko siebie)
-- max 10-15 min między punktami
-- układaj trasę jak spacer „po drodze”
-- NIE skacz po całym mieście
-- podawaj okolice (np. Rynek, Ostrów Tumski)
-
-GODZINY:
-- dodaj konkretne godziny (10:00, 11:30 itd.)
-- plan ma mieć flow dnia
+- GODZINY OBOWIĄZKOWO (10:00, 11:30 itd.)
+- plan ma mieć logiczny ciąg dnia
+- miejsca blisko siebie (max 10-15 min)
+- konkretne miejsca Wrocław
 
 OPIS:
-- 2–3 zdania (nie krócej)
-- MUSI zawierać ciekawostkę (np. historia, klimat, coś unikalnego)
-- unikaj ogólników typu „fajne miejsce”
-- pisz jak znajomy polecający miejscówkę
+- 2–3 zdania
+- zawiera ciekawostkę
+- konkretny klimat
 
 DOJAZD:
-- podaj konkretnie: pieszo / tramwaj + ile minut
+- konkretnie: pieszo / tramwaj + ile minut
 
 Każda kategoria min 3 opcje
 `;
@@ -76,6 +70,17 @@ Każda kategoria min 3 opcje
     text = text.replace(/```json/g, "").replace(/```/g, "").trim();
 
     const parsed = JSON.parse(text);
+
+    // 🔥 fallback godzin (gdyby AI się wywaliło)
+    const godziny = ["10:00","11:30","13:00","15:00"];
+
+    Object.keys(parsed).forEach((kategoria, i) => {
+      parsed[kategoria].forEach(item => {
+        if(!item.time || item.time.length < 4){
+          item.time = godziny[i];
+        }
+      });
+    });
 
     res.json(parsed);
 
