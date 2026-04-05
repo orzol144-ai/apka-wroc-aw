@@ -14,26 +14,28 @@ body {
   color:white;
 }
 
-/* 🔥 HEADER NA STAŁE */
+/* 🔥 HEADER NA STAŁE (FULL WIDTH) */
 .header {
   position:fixed;
   top:0;
   left:0;
   width:100%;
+  background:rgba(15,23,42,0.95);
+  z-index:1000;
+}
+
+/* 🔥 CONTENT W ŚRODKU HEADERA */
+.header-inner {
   max-width:420px;
   margin:auto;
-  right:0;
-  background:rgba(15,23,42,0.95);
-  padding:10px;
-  z-index:1000;
-  border-radius:0 0 15px 15px;
+  padding:10px 15px;
 }
 
 /* 🔥 CONTENT POD HEADER */
 .container {
   max-width:420px;
   margin:auto;
-  padding:90px 15px 15px 15px;
+  padding:100px 15px 15px 15px;
 }
 
 select, button {
@@ -81,15 +83,17 @@ button {
 <body>
 
 <div class="header">
-  <h2>📍 Plan dnia</h2>
+  <div class="header-inner">
+    <h2>📍 Plan dnia</h2>
 
-  <select id="styl">
-    <option value="leniwy">😴 Leniwy</option>
-    <option value="aktywny">🏃 Aktywny</option>
-    <option value="romantyczny">❤️ Romantyczny</option>
-  </select>
+    <select id="styl">
+      <option value="leniwy">😴 Leniwy</option>
+      <option value="aktywny">🏃 Aktywny</option>
+      <option value="romantyczny">❤️ Romantyczny</option>
+    </select>
 
-  <button onclick="start()">🚀 Generuj plan</button>
+    <button onclick="start()">🚀 Generuj plan</button>
+  </div>
 </div>
 
 <div class="container">
