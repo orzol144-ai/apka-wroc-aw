@@ -28,7 +28,7 @@ app.get("/", (req, res) => {
   res.sendFile(path.resolve("index.html"));
 });
 
-// 🔁 pamięć anty powtórki
+// 🔁 pamięć
 let usedPlaces = [];
 
 // 🌦️ pogoda
@@ -62,25 +62,6 @@ async function generatePlan(prompt) {
   return data.output?.[0]?.content?.[0]?.text || "[]";
 }
 
-// 🧪 WALIDACJA (NAPRAWIONA)
-async function validatePlan(planText) {
-  const validationPrompt = `
-Popraw poniższy plan dnia, ale:
-
-- NIE zmieniaj struktury JSON
-- NIE dodawaj żadnego tekstu poza JSON
-- NIE usuwaj pól
-- popraw tylko błędy jeśli są
-
-PLAN:
-${planText}
-
-Zwróć WYŁĄCZNIE JSON.
-`;
-
-  return await generatePlan(validationPrompt);
-}
-
 // 🧠 ENDPOINT
 app.post("/plan", async (req, res) => {
   try {
@@ -101,7 +82,9 @@ ${styleBlock}
 
 Jesteś lokalnym mieszkańcem miasta, który planuje dzień dla znajomego.
 
-Tworzysz realistyczny, naturalny plan dnia.
+Tworzysz realistyczny, naturalny plan dnia jak człowiek.
+
+---
 
 ZASADY:
 
@@ -114,6 +97,8 @@ ZASADY:
 - naturalny flow
 - brak sztywnych godzin
 
+---
+
 STRUKTURA:
 
 dla każdego punktu:
@@ -122,16 +107,13 @@ dla każdego punktu:
 - dojście
 - czas_pobytu
 
-Zwróć JSON.
+---
+
+Zwróć WYŁĄCZNIE JSON (tablica obiektów).
 `;
 
-    // 🔥 STEP 1
     const rawPlan = await generatePlan(prompt);
 
-    // 🔥 STEP 2
-    const validated = await validatePlan(rawPlan);
-
-    // 🔐 SAFE PARSE
     function safeParse(text) {
       try {
         return JSON.parse(text);
@@ -140,10 +122,10 @@ Zwróć JSON.
       }
     }
 
-    let plan = safeParse(validated) || safeParse(rawPlan) || [];
+    let plan = safeParse(rawPlan) || [];
 
     // 🔥 fallback
-    if (!Array.isArray(plan) || !plan.length) {
+    if (!Array.isArray(plan) || plan.length < 3) {
       plan = [
         {
           miejsce: "Rynek Wrocław",
@@ -152,6 +134,14 @@ Zwróć JSON.
           czas_pobytu: "45 min",
           lat: 51.109,
           lon: 17.032
+        },
+        {
+          miejsce: "Ostrów Tumski",
+          opis: "Spacer po najstarszej części miasta",
+          dojscie: "15 min pieszo",
+          czas_pobytu: "60 min",
+          lat: 51.114,
+          lon: 17.046
         }
       ];
     }
