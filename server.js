@@ -8,7 +8,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 📁 pseudo baza danych
+// 📁 pseudo baza
 const DB_FILE = "plans.json";
 
 function loadPlans() {
@@ -28,7 +28,7 @@ app.get("/", (req, res) => {
   res.sendFile(path.resolve("index.html"));
 });
 
-// 🔥 pamięć anty powtórki
+// 🔁 pamięć (anty powtórki)
 let usedPlaces = [];
 
 // 🌦️ pogoda
@@ -44,7 +44,7 @@ async function getWeather() {
   }
 }
 
-// 🧠 GENEROWANIE PLANU
+// 🧠 PLAN
 app.post("/plan", async (req, res) => {
   try {
     const { styl } = req.body;
@@ -57,39 +57,94 @@ app.post("/plan", async (req, res) => {
     const prompt = `
 Jesteś lokalnym przewodnikiem po Wrocławiu.
 
-Tworzysz realistyczny plan dnia jak człowiek.
+Tworzysz REALNY, LOGICZNY plan dnia jak człowiek.
 
 STYL: ${styl}
 TEMPERATURA: ${temp}°C
 
+---
+
 ZASADY:
+
 - NIE używaj tych miejsc: ${banned}
-- nie powtarzaj miejsc
-- zero ogólników
+- NIE powtarzaj miejsc
+- NIE wymyślaj miejsc
+- używaj tylko realnych i znanych miejsc we Wrocławiu
+- jeśli nie jesteś pewien → wybierz znane (Rynek, Ostrów Tumski, Hala Targowa)
+
+---
+
+JEDZENIE (KRYTYCZNE):
+
+- maksymalnie 2 miejsca z jedzeniem
+- NIE mogą być jedno po drugim
+- między nimi MUSI być atrakcja
+
+Schemat:
+kawa → atrakcja → jedzenie → atrakcja → kolacja
+
+ZABRONIONE:
+❌ restauracja → kawiarnia → restauracja
+❌ więcej niż 2 miejsca z jedzeniem
+
+---
 
 TRANSPORT:
-- zawsze szczegółowo:
-  pieszo → "8 min pieszo Mostem Tumskim"
-  tramwaj → "tramwaj nr 8 z Rynek → Plac Grunwaldzki (10 min + 3 min pieszo)"
 
-OPIS:
-- co zrobić
-- co zjeść
-- ciekawostka
+- zawsze konkretnie:
+  ✔ "8 min pieszo Mostem Tumskim"
+  ✔ "tramwaj nr 8 z Rynek → Plac Grunwaldzki (10 min + 3 min pieszo)"
+
+ZABRONIONE:
+❌ "10 min pieszo"
+❌ "tramwaj"
+
+---
+
+POGODA:
+
+- zimno → indoor
+- ciepło → spacery
+
+---
 
 WIECZÓR:
-- zimno → indoor
-- brak spacerów po 20
+
+- po 20:00 tylko indoor
+- brak spacerów po zmroku
+
+---
+
+PLAN MUSI BYĆ RÓŻNORODNY:
+
+minimum 3 typy miejsc:
+- spacer / punkt widokowy
+- atrakcja / muzeum
+- jedzenie
+
+---
+
+OPISY:
+
+- co zrobić
+- co zjeść / zobaczyć
+- ciekawostka
+
+ZABRONIONE:
+❌ ogólniki
+
+---
 
 FORMAT JSON:
+
 [
   {
-    "miejsce":"nazwa",
-    "opis":"opis",
-    "dojscie":"transport",
-    "czas_pobytu":"45 min",
-    "lat":51.1,
-    "lon":17.0
+    "miejsce": "nazwa",
+    "opis": "konkretny opis",
+    "dojscie": "dokładny transport",
+    "czas_pobytu": "45 min",
+    "lat": 51.1,
+    "lon": 17.0
   }
 ]
 `;
@@ -113,13 +168,16 @@ FORMAT JSON:
 
     try {
       plan = JSON.parse(text);
-    } catch {}
+    } catch (e) {
+      console.error("JSON ERROR:", e);
+    }
 
+    // 🔥 fallback
     if (!Array.isArray(plan) || !plan.length) {
       plan = [
         {
           miejsce: "Rynek Wrocław",
-          opis: "Serce miasta z klimatem i restauracjami.",
+          opis: "Centralny punkt miasta z restauracjami i klimatem.",
           dojscie: "start",
           czas_pobytu: "45 min",
           lat: 51.109,
@@ -128,8 +186,10 @@ FORMAT JSON:
       ];
     }
 
-    // zapis anty powtórek
-    plan.forEach(p => usedPlaces.push(p.miejsce));
+    // 🔁 zapis anty powtórki
+    plan.forEach(p => {
+      if (p.miejsce) usedPlaces.push(p.miejsce);
+    });
 
     if (usedPlaces.length > 100) {
       usedPlaces = usedPlaces.slice(-50);
@@ -138,12 +198,12 @@ FORMAT JSON:
     res.json({ list: plan, weather });
 
   } catch (err) {
-    console.error(err);
+    console.error("SERVER ERROR:", err);
     res.status(500).json({ error: "error" });
   }
 });
 
-// 💾 ZAPIS PLANU
+// 💾 zapis planu
 app.post("/save", (req, res) => {
   const plans = loadPlans();
   plans.push(req.body);
@@ -151,11 +211,11 @@ app.post("/save", (req, res) => {
   res.json({ ok: true });
 });
 
-// 📜 HISTORIA
+// 📜 historia
 app.get("/history", (req, res) => {
   res.json(loadPlans());
 });
 
-// 🚀 START
+// 🚀 start
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("🔥 Server działa:", PORT));
