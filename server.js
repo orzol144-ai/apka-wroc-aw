@@ -44,7 +44,7 @@ async function getWeather() {
   }
 }
 
-// 🧠 GENEROWANIE PLANU
+// 🧠 AI CALL
 async function generatePlan(prompt) {
   const res = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
@@ -62,20 +62,20 @@ async function generatePlan(prompt) {
   return data.output?.[0]?.content?.[0]?.text || "[]";
 }
 
-// 🧪 WALIDACJA PLANU
+// 🧪 WALIDACJA (NAPRAWIONA)
 async function validatePlan(planText) {
   const validationPrompt = `
-Przeanalizuj i popraw plan dnia:
+Popraw poniższy plan dnia, ale:
 
+- NIE zmieniaj struktury JSON
+- NIE dodawaj żadnego tekstu poza JSON
+- NIE usuwaj pól
+- popraw tylko błędy jeśli są
+
+PLAN:
 ${planText}
 
-Sprawdź:
-- realność miejsc
-- logikę trasy
-- flow dnia
-- powtórzenia
-
-Popraw jeśli trzeba i zwróć FINALNY JSON.
+Zwróć WYŁĄCZNIE JSON.
 `;
 
   return await generatePlan(validationPrompt);
@@ -101,9 +101,7 @@ ${styleBlock}
 
 Jesteś lokalnym mieszkańcem miasta, który planuje dzień dla znajomego.
 
-Twoim celem jest stworzenie realistycznego dnia, który ma sens logistycznie i energetycznie.
-
----
+Tworzysz realistyczny, naturalny plan dnia.
 
 ZASADY:
 
@@ -116,8 +114,6 @@ ZASADY:
 - naturalny flow
 - brak sztywnych godzin
 
----
-
 STRUKTURA:
 
 dla każdego punktu:
@@ -126,27 +122,27 @@ dla każdego punktu:
 - dojście
 - czas_pobytu
 
----
-
 Zwróć JSON.
 `;
 
     // 🔥 STEP 1
-    let rawPlan = await generatePlan(prompt);
+    const rawPlan = await generatePlan(prompt);
 
-    // 🔥 STEP 2 (walidacja)
-    let validated = await validatePlan(rawPlan);
+    // 🔥 STEP 2
+    const validated = await validatePlan(rawPlan);
 
-    let plan = [];
-
-    try {
-      plan = JSON.parse(validated);
-    } catch {
+    // 🔐 SAFE PARSE
+    function safeParse(text) {
       try {
-        plan = JSON.parse(rawPlan);
-      } catch {}
+        return JSON.parse(text);
+      } catch {
+        return null;
+      }
     }
 
+    let plan = safeParse(validated) || safeParse(rawPlan) || [];
+
+    // 🔥 fallback
     if (!Array.isArray(plan) || !plan.length) {
       plan = [
         {
@@ -160,13 +156,19 @@ Zwróć JSON.
       ];
     }
 
-    plan.forEach(p => usedPlaces.push(p.miejsce));
-    if (usedPlaces.length > 100) usedPlaces = usedPlaces.slice(-50);
+    // 🔁 pamięć
+    plan.forEach(p => {
+      if (p.miejsce) usedPlaces.push(p.miejsce);
+    });
+
+    if (usedPlaces.length > 100) {
+      usedPlaces = usedPlaces.slice(-50);
+    }
 
     res.json({ list: plan, weather });
 
   } catch (err) {
-    console.error(err);
+    console.error("SERVER ERROR:", err);
     res.status(500).json({ error: "error" });
   }
 });
