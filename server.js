@@ -44,7 +44,44 @@ async function getWeather() {
   }
 }
 
-// 🧠 PLAN
+// 🧠 GENEROWANIE PLANU
+async function generatePlan(prompt) {
+  const res = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer " + process.env.OPENAI_API_KEY,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: "gpt-4.1-mini",
+      input: prompt
+    })
+  });
+
+  const data = await res.json();
+  return data.output?.[0]?.content?.[0]?.text || "[]";
+}
+
+// 🧪 WALIDACJA PLANU
+async function validatePlan(planText) {
+  const validationPrompt = `
+Przeanalizuj i popraw plan dnia:
+
+${planText}
+
+Sprawdź:
+- realność miejsc
+- logikę trasy
+- flow dnia
+- powtórzenia
+
+Popraw jeśli trzeba i zwróć FINALNY JSON.
+`;
+
+  return await generatePlan(validationPrompt);
+}
+
+// 🧠 ENDPOINT
 app.post("/plan", async (req, res) => {
   try {
     const { styl } = req.body;
@@ -54,139 +91,67 @@ app.post("/plan", async (req, res) => {
 
     const banned = usedPlaces.slice(-30).join(", ");
 
+    const styleBlock =
+      styl === "leniwy" ? "STYL: LENIWY" :
+      styl === "aktywny" ? "STYL: AMBITNY" :
+      "STYL: ROMANTYCZNY";
+
     const prompt = `
-Jesteś lokalnym przewodnikiem po Wrocławiu.
+${styleBlock}
 
-Tworzysz REALNY, NATURALNY plan dnia jak zrobiłby to człowiek.
+Jesteś lokalnym mieszkańcem miasta, który planuje dzień dla znajomego.
 
-STYL: ${styl}
-TEMPERATURA: ${temp}°C
+Twoim celem jest stworzenie realistycznego dnia, który ma sens logistycznie i energetycznie.
 
 ---
 
 ZASADY:
 
 - NIE używaj tych miejsc: ${banned}
-- NIE powtarzaj miejsc
-- NIE wymyślaj miejsc
-- używaj tylko realnych miejsc we Wrocławiu
-- jeśli nie jesteś pewien → użyj znanych (Rynek, Ostrów Tumski, Hala Targowa)
+- używaj tylko realnych miejsc
+- brak wymyślania
+- max 1 jedzenie
+- min 4 atrakcje
+- logiczna trasa
+- naturalny flow
+- brak sztywnych godzin
 
 ---
 
-STRUKTURA DNIA (BARDZO WAŻNE):
+STRUKTURA:
 
-- plan ma wyglądać naturalnie jak dzień człowieka
-
-Schemat ogólny:
-✔ start: kawa / lekkie wejście
-✔ potem głównie atrakcje
-✔ 1 miejsce z jedzeniem w środku dnia
-✔ reszta to atrakcje
-✔ zakończenie dnia czymś klimatycznym (nie jedzeniem)
+dla każdego punktu:
+- miejsce
+- opis
+- dojście
+- czas_pobytu
 
 ---
 
-JEDZENIE:
-
-- maksymalnie 1 miejsce z jedzeniem
-- tylko w środku dnia (13–15)
-- NIE dawaj kolacji na siłę
-
-ZABRONIONE:
-❌ wiele restauracji
-❌ plan oparty na jedzeniu
-
----
-
-ATRakcje:
-
-- minimum 4–5 atrakcji
-- muszą dominować w planie
-- różnorodne:
-  ✔ spacer
-  ✔ punkt widokowy
-  ✔ muzeum / ciekawy budynek
-  ✔ klimatyczne miejsce
-
----
-
-TRANSPORT:
-
-- zawsze konkretnie:
-  ✔ "8 min pieszo Mostem Tumskim"
-  ✔ "tramwaj nr 8 z Rynek → Plac Grunwaldzki (10 min + 3 min pieszo)"
-
-ZABRONIONE:
-❌ "10 min pieszo"
-❌ "tramwaj"
-
----
-
-POGODA:
-
-- zimno → indoor
-- ciepło → spacery OK
-
----
-
-WIECZÓR:
-
-- po 20:00 brak spacerów jeśli zimno
-- zakończenie dnia ma być lekkie i klimatyczne
-
----
-
-CZAS:
-
-- NIE rób sztywnego schematu godzinowego
-- czas wynika z pobytu + dojścia
-
----
-
-FORMAT JSON:
-
-[
-  {
-    "miejsce": "nazwa",
-    "opis": "konkretny opis + ciekawostka",
-    "dojscie": "dokładny transport",
-    "czas_pobytu": "45 min",
-    "lat": 51.1,
-    "lon": 17.0
-  }
-]
+Zwróć JSON.
 `;
 
-    const aiRes = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        "Authorization": "Bearer " + process.env.OPENAI_API_KEY,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "gpt-4.1-mini",
-        input: prompt
-      })
-    });
+    // 🔥 STEP 1
+    let rawPlan = await generatePlan(prompt);
 
-    const data = await aiRes.json();
-    const text = data.output?.[0]?.content?.[0]?.text || "[]";
+    // 🔥 STEP 2 (walidacja)
+    let validated = await validatePlan(rawPlan);
 
     let plan = [];
 
     try {
-      plan = JSON.parse(text);
-    } catch (e) {
-      console.error("JSON ERROR:", e);
+      plan = JSON.parse(validated);
+    } catch {
+      try {
+        plan = JSON.parse(rawPlan);
+      } catch {}
     }
 
-    // 🔥 fallback
     if (!Array.isArray(plan) || !plan.length) {
       plan = [
         {
           miejsce: "Rynek Wrocław",
-          opis: "Centralny punkt miasta z klimatem i restauracjami.",
+          opis: "Start dnia w centrum miasta",
           dojscie: "start",
           czas_pobytu: "45 min",
           lat: 51.109,
@@ -195,24 +160,18 @@ FORMAT JSON:
       ];
     }
 
-    // 🔁 zapis pamięci
-    plan.forEach(p => {
-      if (p.miejsce) usedPlaces.push(p.miejsce);
-    });
-
-    if (usedPlaces.length > 100) {
-      usedPlaces = usedPlaces.slice(-50);
-    }
+    plan.forEach(p => usedPlaces.push(p.miejsce));
+    if (usedPlaces.length > 100) usedPlaces = usedPlaces.slice(-50);
 
     res.json({ list: plan, weather });
 
   } catch (err) {
-    console.error("SERVER ERROR:", err);
+    console.error(err);
     res.status(500).json({ error: "error" });
   }
 });
 
-// 💾 zapis planu
+// 💾 zapis
 app.post("/save", (req, res) => {
   const plans = loadPlans();
   plans.push(req.body);
