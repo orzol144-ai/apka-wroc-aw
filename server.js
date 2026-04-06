@@ -28,7 +28,7 @@ app.get("/", (req, res) => {
   res.sendFile(path.resolve("index.html"));
 });
 
-// 🔁 pamięć (anty powtórki)
+// 🔁 pamięć anty powtórki
 let usedPlaces = [];
 
 // 🌦️ pogoda
@@ -57,7 +57,7 @@ app.post("/plan", async (req, res) => {
     const prompt = `
 Jesteś lokalnym przewodnikiem po Wrocławiu.
 
-Tworzysz REALNY, LOGICZNY plan dnia jak człowiek.
+Tworzysz REALNY, NATURALNY plan dnia jak zrobiłby to człowiek.
 
 STYL: ${styl}
 TEMPERATURA: ${temp}°C
@@ -69,23 +69,45 @@ ZASADY:
 - NIE używaj tych miejsc: ${banned}
 - NIE powtarzaj miejsc
 - NIE wymyślaj miejsc
-- używaj tylko realnych i znanych miejsc we Wrocławiu
-- jeśli nie jesteś pewien → wybierz znane (Rynek, Ostrów Tumski, Hala Targowa)
+- używaj tylko realnych miejsc we Wrocławiu
+- jeśli nie jesteś pewien → użyj znanych (Rynek, Ostrów Tumski, Hala Targowa)
 
 ---
 
-JEDZENIE (KRYTYCZNE):
+STRUKTURA DNIA (BARDZO WAŻNE):
 
-- maksymalnie 2 miejsca z jedzeniem
-- NIE mogą być jedno po drugim
-- między nimi MUSI być atrakcja
+- plan ma wyglądać naturalnie jak dzień człowieka
 
-Schemat:
-kawa → atrakcja → jedzenie → atrakcja → kolacja
+Schemat ogólny:
+✔ start: kawa / lekkie wejście
+✔ potem głównie atrakcje
+✔ 1 miejsce z jedzeniem w środku dnia
+✔ reszta to atrakcje
+✔ zakończenie dnia czymś klimatycznym (nie jedzeniem)
+
+---
+
+JEDZENIE:
+
+- maksymalnie 1 miejsce z jedzeniem
+- tylko w środku dnia (13–15)
+- NIE dawaj kolacji na siłę
 
 ZABRONIONE:
-❌ restauracja → kawiarnia → restauracja
-❌ więcej niż 2 miejsca z jedzeniem
+❌ wiele restauracji
+❌ plan oparty na jedzeniu
+
+---
+
+ATRakcje:
+
+- minimum 4–5 atrakcji
+- muszą dominować w planie
+- różnorodne:
+  ✔ spacer
+  ✔ punkt widokowy
+  ✔ muzeum / ciekawy budynek
+  ✔ klimatyczne miejsce
 
 ---
 
@@ -104,34 +126,21 @@ ZABRONIONE:
 POGODA:
 
 - zimno → indoor
-- ciepło → spacery
+- ciepło → spacery OK
 
 ---
 
 WIECZÓR:
 
-- po 20:00 tylko indoor
-- brak spacerów po zmroku
+- po 20:00 brak spacerów jeśli zimno
+- zakończenie dnia ma być lekkie i klimatyczne
 
 ---
 
-PLAN MUSI BYĆ RÓŻNORODNY:
+CZAS:
 
-minimum 3 typy miejsc:
-- spacer / punkt widokowy
-- atrakcja / muzeum
-- jedzenie
-
----
-
-OPISY:
-
-- co zrobić
-- co zjeść / zobaczyć
-- ciekawostka
-
-ZABRONIONE:
-❌ ogólniki
+- NIE rób sztywnego schematu godzinowego
+- czas wynika z pobytu + dojścia
 
 ---
 
@@ -140,7 +149,7 @@ FORMAT JSON:
 [
   {
     "miejsce": "nazwa",
-    "opis": "konkretny opis",
+    "opis": "konkretny opis + ciekawostka",
     "dojscie": "dokładny transport",
     "czas_pobytu": "45 min",
     "lat": 51.1,
@@ -177,7 +186,7 @@ FORMAT JSON:
       plan = [
         {
           miejsce: "Rynek Wrocław",
-          opis: "Centralny punkt miasta z restauracjami i klimatem.",
+          opis: "Centralny punkt miasta z klimatem i restauracjami.",
           dojscie: "start",
           czas_pobytu: "45 min",
           lat: 51.109,
@@ -186,7 +195,7 @@ FORMAT JSON:
       ];
     }
 
-    // 🔁 zapis anty powtórki
+    // 🔁 zapis pamięci
     plan.forEach(p => {
       if (p.miejsce) usedPlaces.push(p.miejsce);
     });
