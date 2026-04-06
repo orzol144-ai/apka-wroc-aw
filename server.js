@@ -85,35 +85,62 @@ To ma być dzień, który faktycznie byś komuś ułożył.
 
 ---
 
-ZASADY:
+ZASADY GLOBALNE:
 
 - NIE używaj tych miejsc: ${banned}
-- używaj tylko realnych miejsc
+- każde miejsce MUSI istnieć
 - NIE wymyślaj nazw
 
 ---
 
 FLOW DNIA:
 
-- zaczynasz od kawy (zawsze)
-- potem dzień rozwija się naturalnie
-- 1 miejsce z jedzeniem w środku dnia
+- zaczynasz od kawy (obowiązkowo)
+- 1 miejsce na jedzenie w środku dnia
 - reszta to atrakcje
+- dzień ma płynąć naturalnie
+
+---
+
+SPÓJNOŚĆ TRASY (KRYTYCZNE):
+
+- plan musi być jedną logiczną trasą
+- nie wracaj w te same miejsca
+- każdy punkt bliżej poprzedniego niż losowy punkt
 
 ---
 
 TRANSPORT:
 
-- zawsze podaj jak się przemieścić
-- np:
+- opisuj naturalnie:
   "8 min pieszo przez most"
-  "tramwaj nr 8 z Rynek → Plac Grunwaldzki (10 min + 3 min pieszo)"
+  "krótki tramwaj + 3 min pieszo"
+
+- bez numerów linii
+- bez ogólników typu "blisko"
+
+---
+
+REALNOŚĆ CZASU:
+
+- kawiarnia: 30–60 min
+- atrakcja: 45–90 min
+- spacer: 30–60 min
+- muzeum: 60–90 min
+
+---
+
+RÓŻNORODNOŚĆ:
+
+- nie powtarzaj typu atrakcji pod rząd
+- przeplataj:
+  spacer → miejsce → wnętrze → widok
 
 ---
 
 LOGIKA:
 
-- każdy punkt musi wynikać z poprzedniego
+- każdy punkt musi mieć sens po poprzednim
 - napisz DLACZEGO tam idziemy
 
 ---
@@ -134,9 +161,18 @@ STRUKTURA (JSON):
 
 STYL:
 
-- pisz jak znajomy
-- vibe: "chodź tu, bo..."
-- zero sztucznego języka
+- pisz jak znajomy:
+  "chodź tu, bo..."
+  "potem przejdziemy tu..."
+
+- zero przewodnika
+- zero AI vibe
+
+---
+
+ZAKOŃCZENIE:
+
+- coś klimatycznego (nie jedzenie)
 
 ---
 
@@ -155,25 +191,34 @@ Zwróć WYŁĄCZNIE JSON.
 
     let plan = safeParse(rawPlan) || [];
 
-    if (!Array.isArray(plan) || plan.length < 3) {
+    // 🔥 fallback
+    if (!Array.isArray(plan) || plan.length < 4) {
       plan = [
         {
           miejsce: "Rynek Wrocław",
-          opis: "Start dnia w centrum miasta",
-          dlaczego: "To naturalny punkt startowy",
+          opis: "Start dnia przy kawie w centrum",
+          dlaczego: "To naturalne miejsce na rozpoczęcie dnia",
           dojscie: "start",
           czas_pobytu: "45 min"
         },
         {
           miejsce: "Ostrów Tumski",
-          opis: "Spacer po klimatycznej części miasta",
-          dlaczego: "Blisko i zupełnie inny klimat",
+          opis: "Spacer po klimatycznej, starej części miasta",
+          dlaczego: "Blisko i zmienia klimat dnia",
           dojscie: "15 min pieszo",
           czas_pobytu: "60 min"
+        },
+        {
+          miejsce: "Wyspa Słodowa",
+          opis: "Chill nad rzeką",
+          dlaczego: "Naturalne wyciszenie po spacerze",
+          dojscie: "10 min pieszo",
+          czas_pobytu: "45 min"
         }
       ];
     }
 
+    // 🔁 pamięć
     plan.forEach(p => {
       if (p.miejsce) usedPlaces.push(p.miejsce);
     });
